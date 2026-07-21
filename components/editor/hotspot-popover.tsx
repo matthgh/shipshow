@@ -13,10 +13,11 @@ type Props = {
   onUpdateType: (hotspotId: string, type: HotspotType, placeholder?: string) => void
   onDelete: (hotspotId: string) => void
   onClose: () => void
-  /** Position in % relative to image container, used to place the popover */
-  anchorX: number
-  anchorY: number
+  /** Absolute viewport rect of the anchor element */
+  anchorRect: { x: number; y: number; w: number; h: number }
 }
+
+const POPOVER_WIDTH = 224 // w-56
 
 export function HotspotPopover({
   hotspot,
@@ -26,28 +27,25 @@ export function HotspotPopover({
   onUpdateType,
   onDelete,
   onClose,
-  anchorX,
-  anchorY,
+  anchorRect,
 }: Props) {
   const availableSteps = steps.filter((s) => s.id !== currentStepId)
   const [placeholder, setPlaceholder] = useState(hotspot.placeholder ?? "")
 
-  // Flip popover left/right & up/down to stay in bounds
-  const flipX = anchorX > 60
-  const flipY = anchorY > 55
-
   const type = hotspot.type ?? "navigate"
+
+  // Position below the anchor; flip up if too close to bottom, left if too close to right edge
+  const spaceBelow = window.innerHeight - anchorRect.y
+  const showAbove = spaceBelow < 260
+  const left = Math.min(anchorRect.x, window.innerWidth - POPOVER_WIDTH - 8)
 
   return (
     <div
-      className={cn(
-        "absolute z-30 w-56 bg-popover border border-border rounded-xl shadow-lg shadow-black/10 p-3 flex flex-col gap-2.5",
-      )}
+      className="fixed z-[9999] w-56 bg-popover border border-border rounded-xl shadow-xl shadow-black/15 p-3 flex flex-col gap-2.5"
       style={{
-        left: flipX ? "auto" : `${Math.min(anchorX + 2, 45)}%`,
-        right: flipX ? `${Math.max(100 - anchorX - 2, 10)}%` : "auto",
-        top: flipY ? "auto" : `${Math.min(anchorY + hotspot.height + 1, 75)}%`,
-        bottom: flipY ? `${Math.max(100 - anchorY - 1, 10)}%` : "auto",
+        left,
+        top: showAbove ? anchorRect.y - 8 : anchorRect.y + 6,
+        transform: showAbove ? "translateY(-100%)" : "none",
       }}
       onClick={(e) => e.stopPropagation()}
     >

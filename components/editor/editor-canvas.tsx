@@ -1,6 +1,7 @@
 "use client"
 
-import { useRef, useState, useCallback } from "react"
+import { useRef, useState, useCallback, useEffect } from "react"
+import { createPortal } from "react-dom"
 import type { Hotspot, HotspotType, Step } from "@/lib/editor-types"
 import { HotspotPopover } from "./hotspot-popover"
 import { cn } from "@/lib/utils"
@@ -37,7 +38,11 @@ export function EditorCanvas({
   const containerRef = useRef<HTMLDivElement>(null)
   const [drawing, setDrawing] = useState<DrawingRect | null>(null)
   const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null)
+  const [popoverAnchor, setPopoverAnchor] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
+  const [mounted, setMounted] = useState(false)
   const isDrawing = useRef(false)
+
+  useEffect(() => { setMounted(true) }, [])
 
   // --- Drawing handlers (edit mode only) ---
   const handleMouseDown = useCallback(
@@ -96,6 +101,7 @@ export function EditorCanvas({
     : null
 
   return (
+    <>
     <main className="flex-1 flex items-center justify-center bg-muted/40 overflow-hidden p-8 select-none">
       {/* Phone frame */}
       <div className="relative flex flex-col" style={{ width: 280 }}>
@@ -150,7 +156,14 @@ export function EditorCanvas({
                     if (mode === "preview") {
                       if (!isTextInput && hs.targetStepId) onNavigate(hs.targetStepId)
                     } else {
-                      setSelectedHotspot(isSelected ? null : hs)
+                      if (isSelected) {
+                        setSelectedHotspot(null)
+                        setPopoverAnchor(null)
+                      } else {
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                        setPopoverAnchor({ x: rect.left, y: rect.bottom, w: rect.width, h: rect.height })
+                        setSelectedHotspot(hs)
+                      }
                     }
                   }}
                 >
@@ -180,7 +193,14 @@ export function EditorCanvas({
                         onClick={(e) => {
                           if (mode === "edit") {
                             e.stopPropagation()
-                            setSelectedHotspot(isSelected ? null : hs)
+                            if (isSelected) {
+                              setSelectedHotspot(null)
+                              setPopoverAnchor(null)
+                            } else {
+                              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                              setPopoverAnchor({ x: rect.left, y: rect.bottom, w: rect.width, h: rect.height })
+                              setSelectedHotspot(hs)
+                            }
                           }
                         }}
                       />
@@ -242,33 +262,7 @@ export function EditorCanvas({
               />
             )}
 
-            {/* Hotspot popover */}
-            {selectedHotspot && mode === "edit" && (
-              <HotspotPopover
-                hotspot={selectedHotspot}
-                steps={steps}
-                currentStepId={step.id}
-                onUpdateTarget={(id, targetId) => {
-                  onUpdateTarget(id, targetId)
-                  setSelectedHotspot((prev) =>
-                    prev ? { ...prev, targetStepId: targetId } : null
-                  )
-                }}
-                onUpdateType={(id, type, placeholder) => {
-                  onUpdateType(id, type, placeholder)
-                  setSelectedHotspot((prev) =>
-                    prev ? { ...prev, type, placeholder } : null
-                  )
-                }}
-                onDelete={(id) => {
-                  onDeleteHotspot(id)
-                  setSelectedHotspot(null)
-                }}
-                onClose={() => setSelectedHotspot(null)}
-                anchorX={selectedHotspot.x}
-                anchorY={selectedHotspot.y}
-              />
-            )}
+            {/* Popover is rendered via portal — see below */}
           </div>
         </div>
 
@@ -280,5 +274,36 @@ export function EditorCanvas({
         </p>
       </div>
     </main>
+
+    {/* Portal: renders popover above all clipping ancestors */}
+    {mounted && selectedHotspot && mode === "edit" && popoverAnchor &&
+      createPortal(
+        <HotspotPopover
+          hotspot={selectedHotspot}
+          steps={steps}
+          currentStepId={step.id}
+          anchorRect={popoverAnchor}
+          onUpdateTarget={(id, targetId) => {
+            onUpdateTarget(id, targetId)
+            setSelectedHotspot((prev) => prev ? { ...prev, targetStepId: targetId } : null)
+          }}
+          onUpdateType={(id, type, placeholder) => {
+            onUpdateType(id, type, placeholder)
+            setSelectedHotspot((prev) => prev ? { ...prev, type, placeholder } : null)
+          }}
+          onDelete={(id) => {
+            onDeleteHotspot(id)
+            setSelectedHotspot(null)
+            setPopoverAnchor(null)
+          }}
+          onClose={() => {
+            setSelectedHotspot(null)
+            setPopoverAnchor(null)
+          }}
+        />,
+        document.body
+      )
+    }
+    </>
   )
 }
