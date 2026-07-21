@@ -1,11 +1,15 @@
+export type HotspotType = 'navigate' | 'text_input'
+
 export type Hotspot = {
   id: string
   x: number       // % from left
   y: number       // % from top
   width: number   // % width
   height: number  // % height
+  type: HotspotType
   targetStepId: string | null
   label: string
+  placeholder?: string  // only used when type === 'text_input'
 }
 
 export type Step = {
@@ -37,11 +41,34 @@ export const MOCK_STEPS: Step[] = [
     imageUrl: "/placeholder.svg",
     hotspots: [
       {
-        id: "hs-1",
+        id: "hs-1a",
         x: 15,
-        y: 62,
+        y: 45,
         width: 70,
         height: 8,
+        type: "text_input" as HotspotType,
+        targetStepId: null,
+        label: "Email",
+        placeholder: "Inserisci la tua email",
+      },
+      {
+        id: "hs-1b",
+        x: 15,
+        y: 56,
+        width: 70,
+        height: 8,
+        type: "text_input" as HotspotType,
+        targetStepId: null,
+        label: "Password",
+        placeholder: "Password",
+      },
+      {
+        id: "hs-1c",
+        x: 15,
+        y: 67,
+        width: 70,
+        height: 8,
+        type: "navigate" as HotspotType,
         targetStepId: "step-2",
         label: "Accedi",
       },
@@ -58,6 +85,7 @@ export const MOCK_STEPS: Step[] = [
         y: 30,
         width: 38,
         height: 18,
+        type: "navigate" as HotspotType,
         targetStepId: "step-3",
         label: "Vai Workout",
       },
@@ -67,6 +95,7 @@ export const MOCK_STEPS: Step[] = [
         y: 30,
         width: 38,
         height: 18,
+        type: "navigate" as HotspotType,
         targetStepId: "step-4",
         label: "Vai Profilo",
       },
@@ -83,6 +112,7 @@ export const MOCK_STEPS: Step[] = [
         y: 80,
         width: 70,
         height: 8,
+        type: "navigate" as HotspotType,
         targetStepId: "step-2",
         label: "Torna Dashboard",
       },
@@ -96,9 +126,21 @@ export const MOCK_STEPS: Step[] = [
       {
         id: "hs-5",
         x: 15,
+        y: 35,
+        width: 70,
+        height: 8,
+        type: "text_input" as HotspotType,
+        targetStepId: null,
+        label: "Nome",
+        placeholder: "Il tuo nome",
+      },
+      {
+        id: "hs-5b",
+        x: 15,
         y: 80,
         width: 70,
         height: 8,
+        type: "navigate" as HotspotType,
         targetStepId: "step-2",
         label: "Torna Dashboard",
       },

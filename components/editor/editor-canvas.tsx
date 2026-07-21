@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState, useCallback } from "react"
-import type { Hotspot, Step } from "@/lib/editor-types"
+import type { Hotspot, HotspotType, Step } from "@/lib/editor-types"
 import { HotspotPopover } from "./hotspot-popover"
 import { cn } from "@/lib/utils"
 
@@ -13,6 +13,7 @@ type Props = {
   mode: "edit" | "preview"
   onAddHotspot: (hotspot: Omit<Hotspot, "id" | "label">) => void
   onUpdateTarget: (hotspotId: string, targetStepId: string | null) => void
+  onUpdateType: (hotspotId: string, type: HotspotType, placeholder?: string) => void
   onDeleteHotspot: (hotspotId: string) => void
   onNavigate: (stepId: string) => void
 }
@@ -29,6 +30,7 @@ export function EditorCanvas({
   mode,
   onAddHotspot,
   onUpdateTarget,
+  onUpdateType,
   onDeleteHotspot,
   onNavigate,
 }: Props) {
@@ -77,6 +79,7 @@ export function EditorCanvas({
       y: pct(y, h),
       width: pct(width, w),
       height: pct(height, h),
+      type: "navigate",
       targetStepId: null,
     })
     setDrawing(null)
@@ -128,16 +131,14 @@ export function EditorCanvas({
             {/* Existing hotspots */}
             {step.hotspots.map((hs) => {
               const isSelected = selectedHotspot?.id === hs.id
+              const isTextInput = hs.type === "text_input"
+              const TEXT_COLOR = "oklch(0.55 0.18 145)" // green for text_input
+
               return (
                 <div
                   key={hs.id}
                   data-hotspot="true"
-                  className={cn(
-                    "absolute transition-all",
-                    mode === "edit"
-                      ? "cursor-pointer"
-                      : "cursor-pointer"
-                  )}
+                  className="absolute"
                   style={{
                     left: `${hs.x}%`,
                     top: `${hs.y}%`,
@@ -147,40 +148,83 @@ export function EditorCanvas({
                   onClick={(e) => {
                     e.stopPropagation()
                     if (mode === "preview") {
-                      if (hs.targetStepId) onNavigate(hs.targetStepId)
+                      if (!isTextInput && hs.targetStepId) onNavigate(hs.targetStepId)
                     } else {
                       setSelectedHotspot(isSelected ? null : hs)
                     }
                   }}
                 >
-                  <div
-                    className={cn(
-                      "w-full h-full rounded transition-all",
-                      mode === "edit"
-                        ? "border-2 border-dashed"
-                        : "bg-transparent hover:bg-white/10"
-                    )}
-                    style={
-                      mode === "edit"
-                        ? {
-                            borderColor: HOTSPOT_COLOR,
-                            backgroundColor: isSelected
-                              ? "oklch(0.52 0.22 255 / 20%)"
-                              : "oklch(0.52 0.22 255 / 10%)",
+                  {/* Text input hotspot */}
+                  {isTextInput ? (
+                    <>
+                      <input
+                        type="text"
+                        placeholder={hs.placeholder ?? ""}
+                        disabled={mode === "edit"}
+                        className={cn(
+                          "w-full h-full rounded bg-transparent text-[11px] px-2 text-foreground placeholder:text-muted-foreground/60 focus:outline-none",
+                          mode === "edit"
+                            ? "border-2 border-dashed cursor-pointer select-none"
+                            : "border border-border/60 focus:border-ring focus:ring-1 focus:ring-ring cursor-text"
+                        )}
+                        style={
+                          mode === "edit"
+                            ? {
+                                borderColor: isSelected ? TEXT_COLOR : `${TEXT_COLOR}`,
+                                backgroundColor: isSelected
+                                  ? "oklch(0.55 0.18 145 / 20%)"
+                                  : "oklch(0.55 0.18 145 / 8%)",
+                              }
+                            : undefined
+                        }
+                        onClick={(e) => {
+                          if (mode === "edit") {
+                            e.stopPropagation()
+                            setSelectedHotspot(isSelected ? null : hs)
                           }
-                        : undefined
-                    }
-                  />
-                  {/* Label in edit mode */}
-                  {mode === "edit" && (
-                    <span
-                      className="absolute -top-5 left-0 text-[9px] font-medium px-1 py-0.5 rounded whitespace-nowrap"
-                      style={{ backgroundColor: HOTSPOT_COLOR, color: "white" }}
-                    >
-                      {hs.label || hs.targetStepId
-                        ? steps.find((s) => s.id === hs.targetStepId)?.label ?? "—"
-                        : "—"}
-                    </span>
+                        }}
+                      />
+                      {/* Label badge in edit mode */}
+                      {mode === "edit" && (
+                        <span
+                          className="absolute -top-5 left-0 text-[9px] font-medium px-1 py-0.5 rounded whitespace-nowrap"
+                          style={{ backgroundColor: TEXT_COLOR, color: "white" }}
+                        >
+                          Testo · {hs.label || hs.placeholder || "—"}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    /* Navigate hotspot */
+                    <>
+                      <div
+                        className={cn(
+                          "w-full h-full rounded transition-all",
+                          mode === "edit"
+                            ? "border-2 border-dashed cursor-pointer"
+                            : "bg-transparent hover:bg-white/10 cursor-pointer"
+                        )}
+                        style={
+                          mode === "edit"
+                            ? {
+                                borderColor: HOTSPOT_COLOR,
+                                backgroundColor: isSelected
+                                  ? "oklch(0.52 0.22 255 / 20%)"
+                                  : "oklch(0.52 0.22 255 / 10%)",
+                              }
+                            : undefined
+                        }
+                      />
+                      {/* Label in edit mode */}
+                      {mode === "edit" && (
+                        <span
+                          className="absolute -top-5 left-0 text-[9px] font-medium px-1 py-0.5 rounded whitespace-nowrap"
+                          style={{ backgroundColor: HOTSPOT_COLOR, color: "white" }}
+                        >
+                          {steps.find((s) => s.id === hs.targetStepId)?.label ?? "—"}
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
               )
@@ -208,6 +252,12 @@ export function EditorCanvas({
                   onUpdateTarget(id, targetId)
                   setSelectedHotspot((prev) =>
                     prev ? { ...prev, targetStepId: targetId } : null
+                  )
+                }}
+                onUpdateType={(id, type, placeholder) => {
+                  onUpdateType(id, type, placeholder)
+                  setSelectedHotspot((prev) =>
+                    prev ? { ...prev, type, placeholder } : null
                   )
                 }}
                 onDelete={(id) => {

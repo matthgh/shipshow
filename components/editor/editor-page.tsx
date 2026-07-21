@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { MOCK_STEPS } from "@/lib/editor-types"
-import type { Step, Hotspot } from "@/lib/editor-types"
+import type { Step, Hotspot, HotspotType } from "@/lib/editor-types"
 import { EditorToolbar } from "./editor-toolbar"
 import { StepsSidebar } from "./steps-sidebar"
 import { EditorCanvas } from "./editor-canvas"
@@ -69,6 +69,26 @@ export function EditorPage() {
     [activeStepId]
   )
 
+  const handleUpdateType = useCallback(
+    (hotspotId: string, type: HotspotType, placeholder?: string) => {
+      setSteps((prev) =>
+        prev.map((s) =>
+          s.id === activeStepId
+            ? {
+                ...s,
+                hotspots: s.hotspots.map((h) =>
+                  h.id === hotspotId
+                    ? { ...h, type, targetStepId: type === "text_input" ? null : h.targetStepId, placeholder }
+                    : h
+                ),
+              }
+            : s
+        )
+      )
+    },
+    [activeStepId]
+  )
+
   const handleDeleteHotspot = useCallback(
     (hotspotId: string) => {
       setSteps((prev) =>
@@ -114,6 +134,7 @@ export function EditorPage() {
           mode={mode}
           onAddHotspot={handleAddHotspot}
           onUpdateTarget={handleUpdateTarget}
+          onUpdateType={handleUpdateType}
           onDeleteHotspot={handleDeleteHotspot}
           onNavigate={handleNavigate}
         />
