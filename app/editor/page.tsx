@@ -5,6 +5,9 @@ export const metadata = {
   description: "Crea demo interattive dai tuoi screenshot.",
 }
 
-export default function Page() {
-  return <EditorPage />
+type Props = { searchParams: Promise<{ id?: string }> }
+
+export default async function Page({ searchParams }: Props) {
+  const { id } = await searchParams
+  return <EditorPage demoId={id} />
 }

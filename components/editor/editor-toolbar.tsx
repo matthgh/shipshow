@@ -10,9 +10,10 @@ type Props = {
   mode: "edit" | "preview"
   onModeChange: (mode: "edit" | "preview") => void
   onPublish: () => void
+  isSaving?: boolean
 }
 
-export function EditorToolbar({ projectName, mode, onModeChange, onPublish }: Props) {
+export function EditorToolbar({ projectName, mode, onModeChange, onPublish, isSaving }: Props) {
   return (
     <header className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-border bg-card z-10">
       {/* Left: back + project name */}
@@ -62,9 +63,12 @@ export function EditorToolbar({ projectName, mode, onModeChange, onPublish }: Pr
           </button>
         </div>
 
-        <Button size="sm" onClick={onPublish} className="gap-1.5 text-xs h-7 px-3">
-          <Upload className="size-3" data-icon="inline-start" />
-          Pubblica
+        <Button size="sm" onClick={onPublish} disabled={isSaving} className="gap-1.5 text-xs h-7 px-3">
+          {isSaving
+            ? <span className="size-3 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" data-icon="inline-start" />
+            : <Upload className="size-3" data-icon="inline-start" />
+          }
+          {isSaving ? "Salvataggio..." : "Pubblica"}
         </Button>
       </div>
     </header>
