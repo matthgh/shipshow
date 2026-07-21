@@ -34,7 +34,7 @@ function DashboardScreen() {
           <div>
             <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Daily steps</p>
             <p className="text-2xl font-black text-foreground tabular-nums">
-              {steps.toLocaleString()}
+              {steps.toLocaleString('en-US')}
             </p>
           </div>
           <span className="text-[9px] font-semibold text-primary bg-primary/15 rounded-full px-2 py-0.5">{pct}%</span>
@@ -45,7 +45,7 @@ function DashboardScreen() {
             style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="text-[8px] text-muted-foreground mt-1">{(8240 - steps).toLocaleString()} steps to goal</p>
+        <p className="text-[8px] text-muted-foreground mt-1">{(8240 - steps).toLocaleString('en-US')} steps to goal</p>
       </div>
 
       {/* Stat tiles */}
