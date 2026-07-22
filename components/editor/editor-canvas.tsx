@@ -2,6 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect } from "react"
 import { createPortal } from "react-dom"
+import { ImagePlus, Loader2 } from "lucide-react"
 import type { Hotspot, HotspotType, Step } from "@/lib/editor-types"
 import { HotspotPopover } from "./hotspot-popover"
 import { cn } from "@/lib/utils"
@@ -17,6 +18,7 @@ type Props = {
   onUpdateType: (hotspotId: string, type: HotspotType, placeholder?: string) => void
   onDeleteHotspot: (hotspotId: string) => void
   onNavigate: (stepId: string) => void
+  onImageUpload: (stepId: string, url: string) => void
 }
 
 const HOTSPOT_COLOR = "oklch(0.52 0.22 255)"
@@ -34,15 +36,36 @@ export function EditorCanvas({
   onUpdateType,
   onDeleteHotspot,
   onNavigate,
+  onImageUpload,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [drawing, setDrawing] = useState<DrawingRect | null>(null)
   const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null)
   const [popoverAnchor, setPopoverAnchor] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const isDrawing = useRef(false)
 
   useEffect(() => { setMounted(true) }, [])
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+      fd.append("stepId", step.id)
+      const res = await fetch("/api/upload", { method: "POST", body: fd })
+      const json = await res.json()
+      if (json.url) onImageUpload(step.id, json.url)
+    } finally {
+      setUploading(false)
+      // reset so same file can be re-selected
+      e.target.value = ""
+    }
+  }, [step.id, onImageUpload])
 
   // --- Drawing handlers (edit mode only) ---
   const handleMouseDown = useCallback(
@@ -128,11 +151,60 @@ export function EditorCanvas({
             onMouseUp={handleMouseUp}
             onMouseLeave={() => { if (isDrawing.current) handleMouseUp() }}
           >
-            {/* Screenshot / placeholder */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-secondary to-muted pointer-events-none">
-              <span className="text-5xl font-black text-foreground/10">{step.label.slice(0, 2).toUpperCase()}</span>
-              <span className="text-[10px] text-muted-foreground/60 font-mono">{step.imageUrl}</span>
-            </div>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+
+            {/* Screenshot or placeholder */}
+            {step.imageUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={step.imageUrl}
+                alt={step.label}
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                draggable={false}
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-secondary to-muted pointer-events-none">
+                <ImagePlus className="size-8 text-muted-foreground/30" />
+                <span className="text-[10px] text-muted-foreground/50 font-medium">Nessuna immagine</span>
+              </div>
+            )}
+
+            {/* Upload overlay — visible on hover in edit mode */}
+            {mode === "edit" && (
+              <div
+                className={cn(
+                  "absolute inset-0 flex flex-col items-center justify-center gap-2 transition-opacity cursor-pointer z-20",
+                  uploading
+                    ? "opacity-100 bg-black/40"
+                    : "opacity-0 hover:opacity-100 bg-black/30"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (!uploading) fileInputRef.current?.click()
+                }}
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="size-6 text-white animate-spin" />
+                    <span className="text-[10px] text-white font-medium">Caricamento...</span>
+                  </>
+                ) : (
+                  <>
+                    <ImagePlus className="size-6 text-white" />
+                    <span className="text-[10px] text-white font-medium">
+                      {step.imageUrl ? "Cambia immagine" : "Carica screenshot"}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Existing hotspots */}
             {step.hotspots.map((hs) => {

@@ -64,10 +64,14 @@ function SortableStep({
           isActive ? "border-primary shadow-md shadow-primary/20" : "border-transparent hover:border-border"
         )}
       >
-        {/* Thumbnail placeholder with step number */}
-        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-secondary">
-          <span className="text-2xl font-bold text-muted-foreground/40">{index + 1}</span>
-        </div>
+          {step.imageUrl ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={step.imageUrl} alt={step.label} className="w-full h-full object-cover" draggable={false} />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-secondary">
+            <span className="text-2xl font-bold text-muted-foreground/40">{index + 1}</span>
+          </div>
+        )}
       </div>
       <span className="text-[10px] text-muted-foreground font-medium truncate w-full text-center">
         {step.label}

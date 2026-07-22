@@ -57,12 +57,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: true })
   }
 
-  const stepRows = steps.map((s: { id: string; label: string; image_url: string }, idx: number) => ({
+  const stepRows = steps.map((s: { id: string; label: string; imageUrl?: string; image_url?: string }, idx: number) => ({
     id: s.id,
     demo_id: id,
     order_index: idx,
     label: s.label,
-    image_url: s.image_url ?? '',
+    image_url: s.imageUrl ?? s.image_url ?? '',
   }))
 
   const { error: stepsErr } = await supabase.from('steps').insert(stepRows)

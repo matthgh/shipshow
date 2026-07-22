@@ -208,6 +208,14 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
     setActiveStepId(stepId)
   }, [])
 
+  const handleImageUpload = useCallback((stepId: string, url: string) => {
+    setSteps((prev) => {
+      const next = prev.map((s) => s.id === stepId ? { ...s, imageUrl: url } : s)
+      if (demoId) scheduleSave(next, title, demoId)
+      return next
+    })
+  }, [demoId, scheduleSave, title])
+
   const handlePublish = useCallback(async () => {
     setSaving(true)
     try {
@@ -271,6 +279,7 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
           onUpdateType={handleUpdateType}
           onDeleteHotspot={handleDeleteHotspot}
           onNavigate={handleNavigate}
+          onImageUpload={handleImageUpload}
         />
       </div>
     </div>
