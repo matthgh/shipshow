@@ -4,10 +4,27 @@ import { createServerClient } from '@supabase/ssr'
 
 const PROTECTED = ['/editor', '/dashboard']
 
+// Routes allowed even during maintenance
+const MAINTENANCE_ALLOWED = ['/', '/maintenance', '/auth']
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Maintenance mode — redirect everything except allowed routes
+  const isMaintenance = process.env.MAINTENANCE === 'true'
+  if (isMaintenance) {
+    const allowed = MAINTENANCE_ALLOWED.some((p) => pathname === p || pathname.startsWith(p + '/'))
+    if (!allowed) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/maintenance'
+      return NextResponse.redirect(url)
+    }
+    // Still run session update for allowed routes and return early (no auth check needed)
+    return await updateSession(request)
+  }
+
   const response = await updateSession(request)
 
-  const { pathname } = request.nextUrl
   const needsAuth = PROTECTED.some((p) => pathname.startsWith(p))
   if (!needsAuth) return response
 

@@ -28,9 +28,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const isMaintenance = process.env.MAINTENANCE === 'true'
+
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} bg-background`}>
       <body className="font-sans antialiased">
+        {isMaintenance && (
+          <div className="w-full bg-yellow-500/10 border-b border-yellow-500/30 px-4 py-2 flex items-center justify-center gap-2">
+            <span className="relative flex size-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75" />
+              <span className="relative inline-flex rounded-full size-2 bg-yellow-500" />
+            </span>
+            <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">
+              ShipShow is currently in maintenance mode. Some features may be unavailable.
+            </p>
+          </div>
+        )}
         {children}
         <Toaster richColors position="bottom-right" />
         {process.env.NODE_ENV === 'production' && <Analytics />}
