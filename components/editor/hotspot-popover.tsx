@@ -55,7 +55,7 @@ export function HotspotPopover({
         <button
           onClick={onClose}
           className="text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Chiudi"
+          aria-label="Close"
         >
           <X className="size-3.5" />
         </button>
@@ -64,7 +64,7 @@ export function HotspotPopover({
       {/* Type segmented control */}
       <div className="flex flex-col gap-1">
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-          Tipo di interazione
+          Interaction type
         </span>
         <div className="flex rounded-md border border-border overflow-hidden text-[11px] font-medium">
           {(["navigate", "text_input"] as HotspotType[]).map((t) => (
@@ -78,7 +78,7 @@ export function HotspotPopover({
                   : "bg-muted text-muted-foreground hover:text-foreground"
               )}
             >
-              {t === "navigate" ? "Naviga" : "Testo"}
+              {t === "navigate" ? "Navigate" : "Text"}
             </button>
           ))}
         </div>
@@ -88,14 +88,14 @@ export function HotspotPopover({
       {type === "navigate" && (
         <div className="flex flex-col gap-1">
           <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-            Va a
+            Goes to
           </label>
           <select
             value={hotspot.targetStepId ?? ""}
             onChange={(e) => onUpdateTarget(hotspot.id, e.target.value || null)}
             className="w-full text-xs bg-muted border border-border rounded-md px-2 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           >
-            <option value="">— nessuno —</option>
+            <option value="">— none —</option>
             {availableSteps.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.label}
@@ -118,7 +118,7 @@ export function HotspotPopover({
               setPlaceholder(e.target.value)
               onUpdateType(hotspot.id, "text_input", e.target.value)
             }}
-            placeholder="es. Inserisci il tuo peso"
+            placeholder="e.g. Enter your weight"
             className="w-full text-xs bg-muted border border-border rounded-md px-2 py-1.5 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
@@ -130,7 +130,7 @@ export function HotspotPopover({
         className="flex items-center gap-1.5 text-[11px] text-destructive hover:text-destructive/80 transition-colors mt-0.5"
       >
         <Trash2 className="size-3" />
-        Elimina hotspot
+        Delete hotspot
       </button>
     </div>
   )

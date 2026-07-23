@@ -24,7 +24,7 @@ export function EditorToolbar({ projectName, mode, onModeChange, onPublish, isSa
         <Link
           href="/"
           className="text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Torna alla home"
+          aria-label="Back to home"
         >
           <ChevronLeft className="size-4" />
         </Link>
@@ -50,7 +50,7 @@ export function EditorToolbar({ projectName, mode, onModeChange, onPublish, isSa
             )}
           >
             <Pencil className="size-3" />
-            Modifica
+            Edit
           </button>
           <button
             onClick={() => onModeChange("preview")}
@@ -62,7 +62,7 @@ export function EditorToolbar({ projectName, mode, onModeChange, onPublish, isSa
             )}
           >
             <Eye className="size-3" />
-            Anteprima
+            Preview
           </button>
         </div>
 
@@ -78,7 +78,7 @@ export function EditorToolbar({ projectName, mode, onModeChange, onPublish, isSa
               ? <Loader2 className="size-3 animate-spin" data-icon="inline-start" />
               : <ImagePlus className="size-3" data-icon="inline-start" />
             }
-            {isUploading ? "Caricamento..." : hasImage ? "Cambia immagine" : "Carica immagine"}
+            {isUploading ? "Uploading..." : hasImage ? "Change image" : "Upload image"}
           </Button>
         )}
 
@@ -87,7 +87,7 @@ export function EditorToolbar({ projectName, mode, onModeChange, onPublish, isSa
             ? <span className="size-3 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" data-icon="inline-start" />
             : <Upload className="size-3" data-icon="inline-start" />
           }
-          {isSaving ? "Salvataggio..." : "Pubblica"}
+          {isSaving ? "Saving..." : "Publish"}
         </Button>
       </div>
     </header>

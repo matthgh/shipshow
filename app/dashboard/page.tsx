@@ -28,11 +28,11 @@ export default async function DashboardPage() {
             <span className="text-sm text-muted-foreground hidden sm:block">{user.email}</span>
             <form action="/api/auth/logout" method="POST">
               <Button variant="ghost" size="sm" type="submit" className="text-xs">
-                Esci
+                Sign out
               </Button>
             </form>
             <Link href="/editor" className={cn(buttonVariants({ size: "sm" }), "text-xs gap-1.5")}>
-              + Nuova demo
+              + New demo
             </Link>
           </div>
         </div>
@@ -41,10 +41,10 @@ export default async function DashboardPage() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Le tue demo</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {demos?.length ?? 0} demo create
-            </p>
+          <h1 className="text-2xl font-bold text-foreground">Your demos</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {demos?.length ?? 0} {demos?.length === 1 ? "demo" : "demos"}
+          </p>
           </div>
         </div>
 

@@ -143,7 +143,7 @@ export function EditorCanvas({
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-secondary to-muted pointer-events-none">
                 <ImagePlus className="size-8 text-muted-foreground/30" />
-                <span className="text-[10px] text-muted-foreground/50 font-medium">Nessuna immagine</span>
+                <span className="text-[10px] text-muted-foreground/50 font-medium">No image</span>
               </div>
             )}
 
@@ -223,7 +223,7 @@ export function EditorCanvas({
                           className="absolute -top-5 left-0 text-[9px] font-medium px-1 py-0.5 rounded whitespace-nowrap"
                           style={{ backgroundColor: TEXT_COLOR, color: "white" }}
                         >
-                          Testo · {hs.label || hs.placeholder || "—"}
+                          Text · {hs.label || hs.placeholder || "—"}
                         </span>
                       )}
                     </>
@@ -282,8 +282,8 @@ export function EditorCanvas({
         {/* Mode hint */}
         <p className="mt-3 text-center text-[10px] text-muted-foreground/60">
           {mode === "edit"
-            ? "Trascina per creare un hotspot · Clicca su un hotspot per configurarlo"
-            : "Clicca sugli hotspot per navigare tra gli step"}
+            ? "Drag to create a hotspot · Click a hotspot to configure it"
+            : "Click hotspots to navigate between steps"}
         </p>
       </div>
     </main>

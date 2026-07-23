@@ -39,7 +39,7 @@ export default function LoginPage() {
           <span className="text-2xl font-black tracking-tight text-foreground">
             Ship<span className="text-primary">Show</span>
           </span>
-          <p className="text-sm text-muted-foreground">Accedi al tuo account</p>
+          <p className="text-sm text-muted-foreground">Sign in to your account</p>
         </div>
 
         {/* Card */}
@@ -50,7 +50,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="tu@esempio.com"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -78,14 +78,14 @@ export default function LoginPage() {
             )}
 
             <Button type="submit" disabled={loading} className="w-full mt-2">
-              {loading ? "Accesso in corso..." : "Accedi"}
+              {loading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
 
           <div className="text-center text-sm text-muted-foreground">
-            Non hai un account?{" "}
+            {"Don't have an account?"}{" "}
             <Link href="/auth/sign-up" className={cn(buttonVariants({ variant: "link", size: "default" }), "h-auto p-0 text-sm")}>
-              Registrati
+              Sign up
             </Link>
           </div>
         </div>

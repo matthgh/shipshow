@@ -10,12 +10,12 @@ export default function AuthErrorPage() {
           Ship<span className="text-primary">Show</span>
         </span>
         <div className="bg-card border border-border rounded-2xl p-8 flex flex-col gap-4">
-          <h1 className="text-xl font-bold text-foreground">Errore di autenticazione</h1>
+          <h1 className="text-xl font-bold text-foreground">Authentication error</h1>
           <p className="text-sm text-muted-foreground">
-            Qualcosa e&apos; andato storto durante l&apos;autenticazione. Riprova.
+            Something went wrong during authentication. Please try again.
           </p>
           <Link href="/auth/login" className={cn(buttonVariants(), "w-full mt-2")}>
-            Torna al login
+            Back to login
           </Link>
         </div>
       </div>

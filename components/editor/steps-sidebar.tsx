@@ -116,7 +116,7 @@ function SortableStep({
       ) : (
         <span
           onDoubleClick={() => setEditing(true)}
-          title="Doppio click per rinominare"
+          title="Double-click to rename"
           className="text-[10px] text-muted-foreground font-medium truncate w-full text-center cursor-text hover:text-foreground transition-colors"
         >
           {step.label}
@@ -160,7 +160,7 @@ export function StepsSidebar({ steps, activeStepId, onSelectStep, onReorder, onA
         <button
           onClick={onAddStep}
           className="w-full aspect-[9/16] rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center group"
-          aria-label="Aggiungi step"
+          aria-label="Add step"
         >
           <Plus className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
         </button>

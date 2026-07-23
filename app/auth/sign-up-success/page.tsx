@@ -16,12 +16,12 @@ export default function SignUpSuccessPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-foreground">Controlla la tua email</h1>
+          <h1 className="text-xl font-bold text-foreground">Check your email</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Ti abbiamo inviato un link di conferma. Clicca sul link per attivare il tuo account e iniziare a usare ShipShow.
+            We sent you a confirmation link. Click it to activate your account and start using ShipShow.
           </p>
           <Link href="/auth/login" className={cn(buttonVariants({ variant: "outline" }), "mt-2 w-full")}>
-            Torna al login
+            Back to login
           </Link>
         </div>
       </div>

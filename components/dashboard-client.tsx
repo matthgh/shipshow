@@ -21,7 +21,7 @@ export function DashboardClient({ demos: initial }: { demos: Demo[] }) {
   const [deleting, setDeleting] = useState<string | null>(null)
 
   async function handleDelete(id: string) {
-    if (!confirm("Eliminare questa demo? L'azione è irreversibile.")) return
+    if (!confirm("Delete this demo? This action cannot be undone.")) return
     setDeleting(id)
     await fetch(`/api/demos/${id}`, { method: "DELETE" })
     setDemos((prev) => prev.filter((d) => d.id !== id))
@@ -35,11 +35,11 @@ export function DashboardClient({ demos: initial }: { demos: Demo[] }) {
           <Pencil className="size-7 text-muted-foreground/40" />
         </div>
         <div>
-          <p className="font-semibold text-foreground">Nessuna demo ancora</p>
-          <p className="text-sm text-muted-foreground mt-1">Crea la tua prima demo interattiva</p>
+          <p className="font-semibold text-foreground">No demos yet</p>
+          <p className="text-sm text-muted-foreground mt-1">Create your first interactive demo</p>
         </div>
         <Link href="/editor" className={cn(buttonVariants(), "mt-2")}>
-          Crea demo
+          Create demo
         </Link>
       </div>
     )
@@ -58,7 +58,7 @@ export function DashboardClient({ demos: initial }: { demos: Demo[] }) {
               ? "bg-primary/10 text-primary border-primary/20"
               : "bg-muted text-muted-foreground border-border"
           }`}>
-            {demo.status === "published" ? "Pubblicata" : "Bozza"}
+            {demo.status === "published" ? "Published" : "Draft"}
           </span>
 
           {/* Title */}
@@ -67,7 +67,7 @@ export function DashboardClient({ demos: initial }: { demos: Demo[] }) {
           {/* Date */}
           <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground shrink-0">
             <Clock className="size-3" />
-            {new Date(demo.created_at).toLocaleDateString("it-IT")}
+            {new Date(demo.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
           </span>
 
           {/* Actions */}
@@ -79,7 +79,7 @@ export function DashboardClient({ demos: initial }: { demos: Demo[] }) {
                 className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-8")}
               >
                 <ExternalLink className="size-3.5" />
-                <span className="sr-only">Apri demo</span>
+                <span className="sr-only">Open demo</span>
               </Link>
             )}
             <Link
@@ -87,7 +87,7 @@ export function DashboardClient({ demos: initial }: { demos: Demo[] }) {
               className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-8")}
             >
               <Pencil className="size-3.5" />
-              <span className="sr-only">Modifica</span>
+              <span className="sr-only">Edit</span>
             </Link>
             <Button
               variant="ghost"
@@ -97,7 +97,7 @@ export function DashboardClient({ demos: initial }: { demos: Demo[] }) {
               disabled={deleting === demo.id}
             >
               <Trash2 className="size-3.5" />
-              <span className="sr-only">Elimina</span>
+              <span className="sr-only">Delete</span>
             </Button>
           </div>
         </div>

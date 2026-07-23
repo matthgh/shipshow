@@ -22,11 +22,11 @@ export default function SignUpPage() {
     setError(null)
 
     if (password !== confirm) {
-      setError("Le password non corrispondono.")
+      setError("Passwords do not match.")
       return
     }
     if (password.length < 6) {
-      setError("La password deve essere di almeno 6 caratteri.")
+      setError("Password must be at least 6 characters.")
       return
     }
 
@@ -58,7 +58,7 @@ export default function SignUpPage() {
           <span className="text-2xl font-black tracking-tight text-foreground">
             Ship<span className="text-primary">Show</span>
           </span>
-          <p className="text-sm text-muted-foreground">Crea il tuo account gratuito</p>
+          <p className="text-sm text-muted-foreground">Create your free account</p>
         </div>
 
         {/* Card */}
@@ -69,7 +69,7 @@ export default function SignUpPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="tu@esempio.com"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -82,7 +82,7 @@ export default function SignUpPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Minimo 6 caratteri"
+                placeholder="At least 6 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -91,11 +91,11 @@ export default function SignUpPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="confirm">Conferma password</Label>
+              <Label htmlFor="confirm">Confirm password</Label>
               <Input
                 id="confirm"
                 type="password"
-                placeholder="Ripeti la password"
+                placeholder="Repeat password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required
@@ -110,14 +110,14 @@ export default function SignUpPage() {
             )}
 
             <Button type="submit" disabled={loading} className="w-full mt-2">
-              {loading ? "Registrazione..." : "Crea account"}
+              {loading ? "Creating account..." : "Create account"}
             </Button>
           </form>
 
           <div className="text-center text-sm text-muted-foreground">
-            Hai gia&apos; un account?{" "}
+            Already have an account?{" "}
             <Link href="/auth/login" className={cn(buttonVariants({ variant: "link", size: "default" }), "h-auto p-0 text-sm")}>
-              Accedi
+              Sign in
             </Link>
           </div>
         </div>

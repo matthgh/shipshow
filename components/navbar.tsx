@@ -53,16 +53,16 @@ export function Navbar() {
                 Dashboard
               </Link>
               <Link href="/editor" className={cn(buttonVariants({ size: "sm" }), "bg-primary text-primary-foreground hover:bg-primary/90")}>
-                + Nuova demo
+                + New demo
               </Link>
             </>
           ) : (
             <>
               <Link href="/auth/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-muted-foreground hover:text-foreground")}>
-                Accedi
+                Sign in
               </Link>
               <Link href="/auth/sign-up" className={cn(buttonVariants({ size: "sm" }), "bg-primary text-primary-foreground hover:bg-primary/90")}>
-                Inizia gratis
+                Get started
               </Link>
             </>
           )}
@@ -93,16 +93,16 @@ export function Navbar() {
                   Dashboard
                 </Link>
                 <Link href="/editor" className={cn(buttonVariants({ size: "sm" }))}>
-                  + Nuova demo
+                  + New demo
                 </Link>
               </>
             ) : (
               <>
                 <Link href="/auth/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "justify-start text-muted-foreground")}>
-                  Accedi
+                  Sign in
                 </Link>
                 <Link href="/auth/sign-up" className={cn(buttonVariants({ size: "sm" }), "bg-primary text-primary-foreground")}>
-                  Inizia gratis
+                  Get started
                 </Link>
               </>
             )}
