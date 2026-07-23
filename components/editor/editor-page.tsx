@@ -72,6 +72,13 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
   const [uploading, setUploading] = useState(false)
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Always-current ref so async callbacks (publish, upload) never close over stale steps
+  const stepsRef = useRef<Step[]>(BLANK_STEPS)
+  const titleRef = useRef<string>("New Demo")
+
+  // Keep refs always current
+  useEffect(() => { stepsRef.current = steps }, [steps])
+  useEffect(() => { titleRef.current = title }, [title])
 
   // Load existing demo on mount
   useEffect(() => {
@@ -279,17 +286,23 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
       const id = await ensureDemoExists()
       if (!id) return
 
-      // Cancel any pending debounced save and flush the current state to DB now
+      // Cancel any pending debounced save and flush the latest state now.
+      // Use stepsRef/titleRef to avoid stale closures — React state updates
+      // from setSteps() may not have propagated to the steps/title variables
+      // captured in this callback's closure.
       if (saveTimeout.current) clearTimeout(saveTimeout.current)
+      const currentSteps = stepsRef.current
+      const currentTitle = titleRef.current
+
       const saveRes = await fetch(`/api/demos/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, status: "draft", share_slug: null, steps }),
+        body: JSON.stringify({ title: currentTitle, status: "draft", share_slug: null, steps: currentSteps }),
       })
       const saveData = await saveRes.json()
       if (saveData.error) throw new Error(saveData.error)
 
-      // Sync any newly assigned step IDs
+      // Sync any newly assigned step UUIDs back into state
       if (saveData.stepIdMap) {
         const map = new Map<string, string>(saveData.stepIdMap.map((e: { clientId: string; dbId: string }) => [e.clientId, e.dbId]))
         setSteps((prev) => prev.map((s) => {
@@ -325,7 +338,7 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
     } finally {
       setSaving(false)
     }
-  }, [ensureDemoExists, steps, title])
+  }, [ensureDemoExists])
 
   if (loading) {
     return (

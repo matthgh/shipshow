@@ -59,38 +59,55 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const isUUID = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
 
-  // Check if ALL step IDs are real UUIDs (i.e. previously saved to DB).
-  // If even one is a temp client ID, we must drop id from ALL rows so the
-  // Supabase JS client sends a homogeneous schema and Postgres generates
-  // fresh UUIDs for every step. Mixed schemas cause a 400.
-  const allRealUUIDs = steps.every((s: { id: string }) => isUUID(s.id))
+  // Split steps into those that already have real UUIDs (update-in-place)
+  // and those with temp client IDs (need a new UUID from Postgres).
+  // We insert each group separately so the schema is always homogeneous.
+  type StepRow = Record<string, unknown>
+  const realRows: StepRow[] = []
+  const tempRows: StepRow[] = []
 
-  const stepRows = steps.map((s: { id: string; label: string; imageUrl?: string; image_url?: string }, idx: number) => {
-    const row: Record<string, unknown> = {
+  steps.forEach((s: { id: string; label: string; imageUrl?: string; image_url?: string }, idx: number) => {
+    const base: StepRow = {
       demo_id: id,
       order_index: idx,
       label: s.label,
       image_url: s.imageUrl ?? s.image_url ?? '',
     }
-    if (allRealUUIDs) row.id = s.id
-    return row
+    if (isUUID(s.id)) {
+      realRows.push({ ...base, id: s.id })
+    } else {
+      tempRows.push(base)
+    }
   })
 
-  const { data: insertedSteps, error: stepsErr } = await supabase
-    .from('steps')
-    .insert(stepRows)
-    .select('id, order_index')
-
-  if (stepsErr) {
-    return NextResponse.json({ error: stepsErr.message }, { status: 500 })
+  // Insert real-UUID rows (preserves IDs so hotspot target_step_id stays valid)
+  let insertedReal: Array<{ id: string; order_index: number }> = []
+  if (realRows.length) {
+    const { data, error } = await supabase.from('steps').insert(realRows).select('id, order_index')
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    insertedReal = data ?? []
   }
 
-  // Build a map from order_index → new DB id for hotspot wiring
+  // Insert temp rows (Postgres assigns new UUIDs)
+  let insertedTemp: Array<{ id: string; order_index: number }> = []
+  if (tempRows.length) {
+    const { data, error } = await supabase.from('steps').insert(tempRows).select('id, order_index')
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    insertedTemp = data ?? []
+  }
+
+  // Build order_index → real DB id map for all inserted steps
   const idByOrder = new Map<number, string>(
-    (insertedSteps ?? []).map((r: { id: string; order_index: number }) => [r.order_index, r.id])
+    [...insertedReal, ...insertedTemp].map((r) => [r.order_index, r.id])
   )
 
-  // 4. Re-insert all hotspots using the real DB step IDs
+  // Build client_id → db_id map (temp steps get a new UUID; real steps keep theirs)
+  const clientToDb = new Map<string, string>()
+  steps.forEach((s: { id: string }, idx: number) => {
+    clientToDb.set(s.id, idByOrder.get(idx) ?? s.id)
+  })
+
+  // 4. Re-insert all hotspots using the resolved DB step IDs
   type HotspotInput = {
     id: string; type: string
     x: number; y: number; width: number; height: number
@@ -99,12 +116,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
   type StepInput = { id: string; hotspots: HotspotInput[] }
 
   const allHotspots: HotspotInput[] = steps.flatMap((s: StepInput) => s.hotspots ?? [])
-  const allHotspotUUIDs = allHotspots.every((h) => isUUID(h.id))
+  const allHotspotUUIDs = allHotspots.length > 0 && allHotspots.every((h) => isUUID(h.id))
 
-  const hotspotRows = steps.flatMap((s: StepInput, sIdx: number) => {
-    const realStepId = allRealUUIDs ? s.id : (idByOrder.get(sIdx) ?? null)
+  const hotspotRows = steps.flatMap((s: StepInput) => {
+    const realStepId = clientToDb.get(s.id)
     if (!realStepId) return []
     return (s.hotspots ?? []).map((h) => {
+      // Resolve targetStepId through the same client→db map
+      const resolvedTarget = h.targetStepId ? (clientToDb.get(h.targetStepId) ?? (isUUID(h.targetStepId) ? h.targetStepId : null)) : null
       const row: Record<string, unknown> = {
         step_id: realStepId,
         type: h.type ?? 'navigate',
@@ -112,7 +131,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         y_pct: h.y,
         width_pct: h.width,
         height_pct: h.height,
-        target_step_id: h.targetStepId && isUUID(h.targetStepId) ? h.targetStepId : null,
+        target_step_id: resolvedTarget,
         placeholder: h.placeholder ?? null,
         label: h.label ?? '',
       }
@@ -128,10 +147,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
     }
   }
 
-  // Return the newly assigned step IDs so the client can replace temp IDs
-  const stepIdMap = steps.map((s: { id: string }, idx: number) => ({
+  // Return the client→db step ID map so the client can sync temp IDs
+  const stepIdMap = steps.map((s: { id: string }) => ({
     clientId: s.id,
-    dbId: isUUID(s.id) ? s.id : (idByOrder.get(idx) ?? s.id),
+    dbId: clientToDb.get(s.id) ?? s.id,
   }))
 
   return NextResponse.json({ ok: true, stepIdMap })
