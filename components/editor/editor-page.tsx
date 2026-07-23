@@ -50,7 +50,7 @@ function dbToSteps(dbSteps: Array<{
 const BLANK_STEPS: Step[] = [
   {
     id: `step-${Date.now()}`,
-    label: "Step 1",
+      label: "Screen 1",
     imageUrl: "/placeholder.svg",
     hotspots: [],
   },
@@ -62,7 +62,7 @@ type Props = {
 
 export function EditorPage({ demoId: initialDemoId }: Props) {
   const [demoId, setDemoId] = useState<string | null>(initialDemoId ?? null)
-  const [title, setTitle] = useState("Nuova Demo")
+  const [title, setTitle] = useState("New Demo")
   const [steps, setSteps] = useState<Step[]>(BLANK_STEPS)
   const [activeStepId, setActiveStepId] = useState<string>(BLANK_STEPS[0].id)
   const [mode, setMode] = useState<"edit" | "preview">("edit")
@@ -79,26 +79,47 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
     fetch(`/api/demos/${initialDemoId}`)
       .then((r) => r.json())
       .then((data) => {
-        if (data.error) { toast.error("Demo non trovata"); return }
-        setTitle(data.title ?? "Nuova Demo")
+        if (data.error) { toast.error("Demo not found"); return }
+        setTitle(data.title ?? "New Demo")
         const loaded = dbToSteps(data.steps ?? [])
         const s = loaded.length ? loaded : BLANK_STEPS
         setSteps(s)
         setActiveStepId(s[0].id)
       })
-      .catch(() => toast.error("Errore nel caricamento"))
+      .catch(() => toast.error("Failed to load demo"))
       .finally(() => setLoading(false))
   }, [initialDemoId])
 
   // Auto-save after 1.5s of inactivity
   const scheduleSave = useCallback((updatedSteps: Step[], updatedTitle: string, id: string) => {
     if (saveTimeout.current) clearTimeout(saveTimeout.current)
-    saveTimeout.current = setTimeout(() => {
-      fetch(`/api/demos/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: updatedTitle, status: "draft", share_slug: null, steps: updatedSteps }),
-      }).catch(() => {/* silent */})
+    saveTimeout.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/demos/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: updatedTitle, status: "draft", share_slug: null, steps: updatedSteps }),
+        })
+        const data = await res.json()
+        // Replace any temp client IDs with the real UUIDs assigned by the DB
+        if (data.stepIdMap) {
+          const map = new Map<string, string>(data.stepIdMap.map((e: { clientId: string; dbId: string }) => [e.clientId, e.dbId]))
+          setSteps((prev) => prev.map((s) => {
+            const newId = map.get(s.id)
+            if (!newId || newId === s.id) return s
+            return {
+              ...s,
+              id: newId,
+              hotspots: s.hotspots.map((h) => ({
+                ...h,
+                targetStepId: h.targetStepId ? (map.get(h.targetStepId) ?? h.targetStepId) : null,
+              })),
+            }
+          }))
+          // Also keep activeStepId in sync
+          setActiveStepId((prev) => map.get(prev) ?? prev)
+        }
+      } catch {/* silent */}
     }, 1500)
   }, [])
 
@@ -106,7 +127,7 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
     if (demoId) return demoId
     const res = await fetch("/api/demos", { method: "POST" })
     const data = await res.json()
-    if (data.error) { toast.error("Errore nella creazione della demo"); return null }
+    if (data.error) { toast.error("Failed to create demo"); return null }
     setDemoId(data.id)
     // Update URL without full navigation
     window.history.replaceState(null, "", `/editor?id=${data.id}`)
@@ -125,7 +146,7 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
     if (!id) return
     const newStep: Step = {
       id: `step-${Date.now()}`,
-      label: `Step ${steps.length + 1}`,
+      label: `Screen ${steps.length + 1}`,
       imageUrl: "/placeholder.svg",
       hotspots: [],
     }
@@ -269,9 +290,9 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
 
       const shareUrl = `${window.location.origin}/d/${slug}`
       await navigator.clipboard.writeText(shareUrl).catch(() => {/* no clipboard permission */})
-      toast.success("Demo pubblicata!", { description: `Link copiato: ${shareUrl}` })
+      toast.success("Demo published!", { description: `Link copied: ${shareUrl}` })
     } catch (e) {
-      toast.error("Errore nella pubblicazione", { description: String(e) })
+      toast.error("Failed to publish", { description: String(e) })
     } finally {
       setSaving(false)
     }
@@ -282,7 +303,7 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
       <div className="h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <div className="size-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-          <p className="text-sm text-muted-foreground">Caricamento demo...</p>
+          <p className="text-sm text-muted-foreground">Loading demo...</p>
         </div>
       </div>
     )

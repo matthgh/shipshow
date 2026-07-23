@@ -31,11 +31,14 @@ export async function POST(request: Request) {
       .from("screenshots")
       .getPublicUrl(path)
 
-    // Update step image_url in DB
-    await supabase
-      .from("steps")
-      .update({ image_url: publicUrl.publicUrl })
-      .eq("id", stepId)
+    // Only update the DB if the stepId looks like a real UUID (not a temp client ID)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stepId)
+    if (isUUID) {
+      await supabase
+        .from("steps")
+        .update({ image_url: publicUrl.publicUrl })
+        .eq("id", stepId)
+    }
 
     return NextResponse.json({ url: publicUrl.publicUrl })
   } catch (err) {

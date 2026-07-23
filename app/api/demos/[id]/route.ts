@@ -57,20 +57,36 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: true })
   }
 
-  const stepRows = steps.map((s: { id: string; label: string; imageUrl?: string; image_url?: string }, idx: number) => ({
-    id: s.id,
-    demo_id: id,
-    order_index: idx,
-    label: s.label,
-    image_url: s.imageUrl ?? s.image_url ?? '',
-  }))
+  const isUUID = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
 
-  const { error: stepsErr } = await supabase.from('steps').insert(stepRows)
+  // Only include id if it's already a real UUID (from a previous save).
+  // Otherwise let Postgres generate one via gen_random_uuid().
+  const stepRows = steps.map((s: { id: string; label: string; imageUrl?: string; image_url?: string }, idx: number) => {
+    const row: Record<string, unknown> = {
+      demo_id: id,
+      order_index: idx,
+      label: s.label,
+      image_url: s.imageUrl ?? s.image_url ?? '',
+    }
+    if (isUUID(s.id)) row.id = s.id
+    return row
+  })
+
+  const { data: insertedSteps, error: stepsErr } = await supabase
+    .from('steps')
+    .insert(stepRows)
+    .select('id, order_index')
+
   if (stepsErr) {
     return NextResponse.json({ error: stepsErr.message }, { status: 500 })
   }
 
-  // 4. Re-insert all hotspots
+  // Build a map from order_index → new DB id for hotspot wiring
+  const idByOrder = new Map<number, string>(
+    (insertedSteps ?? []).map((r: { id: string; order_index: number }) => [r.order_index, r.id])
+  )
+
+  // 4. Re-insert all hotspots using the real DB step IDs
   const hotspotRows = steps.flatMap((s: {
     id: string
     hotspots: Array<{
@@ -81,20 +97,25 @@ export async function PUT(req: NextRequest, { params }: Params) {
       placeholder?: string
       label: string
     }>
-  }) =>
-    (s.hotspots ?? []).map((h) => ({
-      id: h.id,
-      step_id: s.id,
-      type: h.type ?? 'navigate',
-      x_pct: h.x,
-      y_pct: h.y,
-      width_pct: h.width,
-      height_pct: h.height,
-      target_step_id: h.targetStepId ?? null,
-      placeholder: h.placeholder ?? null,
-      label: h.label ?? '',
-    }))
-  )
+  }, sIdx: number) => {
+    const realStepId = isUUID(s.id) ? s.id : (idByOrder.get(sIdx) ?? null)
+    if (!realStepId) return []
+    return (s.hotspots ?? []).map((h) => {
+      const row: Record<string, unknown> = {
+        step_id: realStepId,
+        type: h.type ?? 'navigate',
+        x_pct: h.x,
+        y_pct: h.y,
+        width_pct: h.width,
+        height_pct: h.height,
+        target_step_id: h.targetStepId && isUUID(h.targetStepId) ? h.targetStepId : null,
+        placeholder: h.placeholder ?? null,
+        label: h.label ?? '',
+      }
+      if (isUUID(h.id)) row.id = h.id
+      return row
+    })
+  })
 
   if (hotspotRows.length) {
     const { error: hsErr } = await supabase.from('hotspots').insert(hotspotRows)
@@ -103,7 +124,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
     }
   }
 
-  return NextResponse.json({ ok: true })
+  // Return the newly assigned step IDs so the client can replace temp IDs
+  const stepIdMap = steps.map((s: { id: string }, idx: number) => ({
+    clientId: s.id,
+    dbId: isUUID(s.id) ? s.id : (idByOrder.get(idx) ?? s.id),
+  }))
+
+  return NextResponse.json({ ok: true, stepIdMap })
 }
 
 // DELETE /api/demos/[id] — remove demo (RLS ensures ownership)
