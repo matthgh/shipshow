@@ -1,6 +1,7 @@
 "use client"
 
 import { Plus } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import type { Step } from "@/lib/editor-types"
 import {
@@ -25,6 +26,7 @@ type Props = {
   onSelectStep: (id: string) => void
   onReorder: (steps: Step[]) => void
   onAddStep: () => void
+  onRenameStep: (id: string, label: string) => void
 }
 
 function SortableStep({
@@ -32,14 +34,37 @@ function SortableStep({
   index,
   isActive,
   onSelect,
+  onRename,
 }: {
   step: Step
   index: number
   isActive: boolean
   onSelect: () => void
+  onRename: (label: string) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: step.id })
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(step.label)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Keep draft in sync if label changes externally
+  useEffect(() => { setDraft(step.label) }, [step.label])
+
+  // Focus input when entering edit mode
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }
+  }, [editing])
+
+  const commit = () => {
+    const trimmed = draft.trim() || step.label
+    setDraft(trimmed)
+    onRename(trimmed)
+    setEditing(false)
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -50,21 +75,22 @@ function SortableStep({
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      onClick={onSelect}
       className={cn(
-        "flex flex-col items-center gap-1.5 cursor-pointer select-none",
+        "flex flex-col items-center gap-1.5 select-none",
         isDragging && "opacity-40"
       )}
     >
+      {/* Thumbnail — drag handle */}
       <div
+        {...attributes}
+        {...listeners}
+        onClick={onSelect}
         className={cn(
-          "w-full aspect-[9/16] rounded-lg overflow-hidden border-2 transition-all bg-muted",
+          "w-full aspect-[9/16] rounded-lg overflow-hidden border-2 transition-all bg-muted cursor-pointer",
           isActive ? "border-primary shadow-md shadow-primary/20" : "border-transparent hover:border-border"
         )}
       >
-          {step.imageUrl ? (
+        {step.imageUrl ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img src={step.imageUrl} alt={step.label} className="w-full h-full object-cover" draggable={false} />
         ) : (
@@ -73,14 +99,34 @@ function SortableStep({
           </div>
         )}
       </div>
-      <span className="text-[10px] text-muted-foreground font-medium truncate w-full text-center">
-        {step.label}
-      </span>
+
+      {/* Label — double-click to edit */}
+      {editing ? (
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit()
+            if (e.key === "Escape") { setDraft(step.label); setEditing(false) }
+          }}
+          className="w-full text-[10px] text-center font-medium bg-muted border border-primary rounded px-1 py-0.5 outline-none focus:ring-1 focus:ring-primary"
+        />
+      ) : (
+        <span
+          onDoubleClick={() => setEditing(true)}
+          title="Doppio click per rinominare"
+          className="text-[10px] text-muted-foreground font-medium truncate w-full text-center cursor-text hover:text-foreground transition-colors"
+        >
+          {step.label}
+        </span>
+      )}
     </div>
   )
 }
 
-export function StepsSidebar({ steps, activeStepId, onSelectStep, onReorder, onAddStep }: Props) {
+export function StepsSidebar({ steps, activeStepId, onSelectStep, onReorder, onAddStep, onRenameStep }: Props) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   function handleDragEnd(event: DragEndEvent) {
@@ -104,6 +150,7 @@ export function StepsSidebar({ steps, activeStepId, onSelectStep, onReorder, onA
                 index={i}
                 isActive={step.id === activeStepId}
                 onSelect={() => onSelectStep(step.id)}
+                onRename={(label) => onRenameStep(step.id, label)}
               />
             ))}
           </SortableContext>

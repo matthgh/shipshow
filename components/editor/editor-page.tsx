@@ -206,6 +206,14 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
     [activeStepId, demoId, scheduleSave, title]
   )
 
+  const handleRenameStep = useCallback((stepId: string, label: string) => {
+    setSteps((prev) => {
+      const next = prev.map((s) => s.id === stepId ? { ...s, label } : s)
+      ensureDemoExists().then((id) => { if (id) scheduleSave(next, title, id) })
+      return next
+    })
+  }, [ensureDemoExists, scheduleSave, title])
+
   const handleNavigate = useCallback((stepId: string) => {
     setActiveStepId(stepId)
   }, [])
@@ -307,6 +315,7 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
           onSelectStep={setActiveStepId}
           onReorder={handleReorder}
           onAddStep={handleAddStep}
+          onRenameStep={handleRenameStep}
         />
         <EditorCanvas
           step={activeStep}
