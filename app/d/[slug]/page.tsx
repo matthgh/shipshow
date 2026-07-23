@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createServiceClient } from "@/lib/supabase/service"
 import { notFound } from "next/navigation"
 import { DemoViewer } from "@/components/demo-viewer"
 import type { Metadata } from "next"
@@ -8,7 +8,7 @@ type Params = { params: Promise<{ slug: string }>; searchParams: Promise<{ guide
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { data } = await supabase.from("demos").select("title").eq("share_slug", slug).single()
   return {
     title: data?.title ? `${data.title} — ShipShow` : "Demo — ShipShow",
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function Page({ params, searchParams }: Params) {
   const { slug } = await params
   const { guided } = await searchParams
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   const { data: demo } = await supabase
     .from("demos")

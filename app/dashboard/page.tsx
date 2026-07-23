@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { createServiceClient } from "@/lib/supabase/service"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -6,11 +7,12 @@ import { DashboardClient } from "@/components/dashboard-client"
 import { cn } from "@/lib/utils"
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
 
   if (!user) redirect("/auth/login")
 
+  const supabase = createServiceClient()
   const { data: demos } = await supabase
     .from("demos")
     .select("id, title, status, share_slug, created_at")

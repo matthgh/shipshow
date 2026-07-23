@@ -1,12 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { NextRequest, NextResponse } from 'next/server'
 
 type Params = { params: Promise<{ id: string }> }
 
 // GET /api/demos/[id] — fetch full demo with steps & hotspots
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, { params }: Params) {
   const { id } = await params
-  const supabase = await createClient()
+
+  // Identify requester (may be null for unauthenticated)
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+
+  // Use service client so RLS doesn't interfere
+  const supabase = createServiceClient()
 
   const { data: demo, error: demoErr } = await supabase
     .from('demos')
@@ -14,8 +21,13 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .eq('id', id)
     .single()
 
-  if (demoErr) {
-    return NextResponse.json({ error: demoErr.message }, { status: 404 })
+  if (demoErr || !demo) {
+    return NextResponse.json({ error: 'Demo not found' }, { status: 404 })
+  }
+
+  // Only allow access if: owner OR published
+  if (demo.status !== 'published' && demo.user_id !== user?.id) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
   const { data: steps, error: stepsErr } = await supabase
@@ -34,10 +46,26 @@ export async function GET(_req: NextRequest, { params }: Params) {
 // PUT /api/demos/[id] — full save: upsert steps & hotspots, update demo title/status
 export async function PUT(req: NextRequest, { params }: Params) {
   const { id } = await params
-  const supabase = await createClient()
-  const body = await req.json()
 
+  // Auth check
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const supabase = createServiceClient()
+  const body = await req.json()
   const { title, status, share_slug, steps } = body
+
+  // Verify ownership before writing
+  const { data: existing } = await supabase
+    .from('demos')
+    .select('user_id')
+    .eq('id', id)
+    .single()
+
+  if (!existing || existing.user_id !== user.id) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   // 1. Update demo metadata
   const { error: demoErr } = await supabase
@@ -49,19 +77,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: demoErr.message }, { status: 500 })
   }
 
-  // 2. Delete all existing steps for this demo (cascade deletes hotspots)
+  // 2. Delete all existing steps (cascade deletes hotspots)
   await supabase.from('steps').delete().eq('demo_id', id)
 
-  // 3. Re-insert steps in order
   if (!steps?.length) {
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, stepIdMap: [] })
   }
 
   const isUUID = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
 
-  // Split steps into those that already have real UUIDs (update-in-place)
-  // and those with temp client IDs (need a new UUID from Postgres).
-  // We insert each group separately so the schema is always homogeneous.
   type StepRow = Record<string, unknown>
   const realRows: StepRow[] = []
   const tempRows: StepRow[] = []
@@ -80,7 +104,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
     }
   })
 
-  // Insert real-UUID rows (preserves IDs so hotspot target_step_id stays valid)
   let insertedReal: Array<{ id: string; order_index: number }> = []
   if (realRows.length) {
     const { data, error } = await supabase.from('steps').insert(realRows).select('id, order_index')
@@ -88,7 +111,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
     insertedReal = data ?? []
   }
 
-  // Insert temp rows (Postgres assigns new UUIDs)
   let insertedTemp: Array<{ id: string; order_index: number }> = []
   if (tempRows.length) {
     const { data, error } = await supabase.from('steps').insert(tempRows).select('id, order_index')
@@ -96,18 +118,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
     insertedTemp = data ?? []
   }
 
-  // Build order_index → real DB id map for all inserted steps
   const idByOrder = new Map<number, string>(
     [...insertedReal, ...insertedTemp].map((r) => [r.order_index, r.id])
   )
 
-  // Build client_id → db_id map (temp steps get a new UUID; real steps keep theirs)
   const clientToDb = new Map<string, string>()
   steps.forEach((s: { id: string }, idx: number) => {
     clientToDb.set(s.id, idByOrder.get(idx) ?? s.id)
   })
 
-  // 4. Re-insert all hotspots using the resolved DB step IDs
   type HotspotInput = {
     id: string; type: string
     x: number; y: number; width: number; height: number
@@ -122,8 +141,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const realStepId = clientToDb.get(s.id)
     if (!realStepId) return []
     return (s.hotspots ?? []).map((h) => {
-      // Resolve targetStepId through the same client→db map
-      const resolvedTarget = h.targetStepId ? (clientToDb.get(h.targetStepId) ?? (isUUID(h.targetStepId) ? h.targetStepId : null)) : null
+      const resolvedTarget = h.targetStepId
+        ? (clientToDb.get(h.targetStepId) ?? (isUUID(h.targetStepId) ? h.targetStepId : null))
+        : null
       const row: Record<string, unknown> = {
         step_id: realStepId,
         type: h.type ?? 'navigate',
@@ -142,12 +162,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   if (hotspotRows.length) {
     const { error: hsErr } = await supabase.from('hotspots').insert(hotspotRows)
-    if (hsErr) {
-      return NextResponse.json({ error: hsErr.message }, { status: 500 })
-    }
+    if (hsErr) return NextResponse.json({ error: hsErr.message }, { status: 500 })
   }
 
-  // Return the client→db step ID map so the client can sync temp IDs
   const stepIdMap = steps.map((s: { id: string }) => ({
     clientId: s.id,
     dbId: clientToDb.get(s.id) ?? s.id,
@@ -156,14 +173,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
   return NextResponse.json({ ok: true, stepIdMap })
 }
 
-// DELETE /api/demos/[id] — remove demo (RLS ensures ownership)
+// DELETE /api/demos/[id]
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const { id } = await params
-  const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const supabase = createServiceClient()
   const { error } = await supabase
     .from('demos')
     .delete()
@@ -171,6 +189,5 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     .eq('user_id', user.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
   return NextResponse.json({ ok: true })
 }

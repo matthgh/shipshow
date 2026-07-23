@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { createServiceClient } from "@/lib/supabase/service"
 import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
@@ -10,7 +11,12 @@ export async function POST(request: Request) {
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 })
     if (!stepId) return NextResponse.json({ error: "No stepId provided" }, { status: 400 })
 
-    const supabase = await createClient()
+    // Auth check
+    const authClient = await createClient()
+    const { data: { user } } = await authClient.auth.getUser()
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    const supabase = createServiceClient()
 
     const ext = file.name.split(".").pop() ?? "png"
     const path = `steps/${stepId}/${Date.now()}.${ext}`
@@ -20,10 +26,7 @@ export async function POST(request: Request) {
 
     const { error } = await supabase.storage
       .from("screenshots")
-      .upload(path, buffer, {
-        contentType: file.type,
-        upsert: true,
-      })
+      .upload(path, buffer, { contentType: file.type, upsert: true })
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -31,7 +34,7 @@ export async function POST(request: Request) {
       .from("screenshots")
       .getPublicUrl(path)
 
-    // Only update the DB if the stepId looks like a real UUID (not a temp client ID)
+    // Only update DB if stepId is a real UUID (not a temp client ID)
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stepId)
     if (isUUID) {
       await supabase
