@@ -59,8 +59,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const isUUID = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
 
-  // Only include id if it's already a real UUID (from a previous save).
-  // Otherwise let Postgres generate one via gen_random_uuid().
+  // Check if ALL step IDs are real UUIDs (i.e. previously saved to DB).
+  // If even one is a temp client ID, we must drop id from ALL rows so the
+  // Supabase JS client sends a homogeneous schema and Postgres generates
+  // fresh UUIDs for every step. Mixed schemas cause a 400.
+  const allRealUUIDs = steps.every((s: { id: string }) => isUUID(s.id))
+
   const stepRows = steps.map((s: { id: string; label: string; imageUrl?: string; image_url?: string }, idx: number) => {
     const row: Record<string, unknown> = {
       demo_id: id,
@@ -68,7 +72,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       label: s.label,
       image_url: s.imageUrl ?? s.image_url ?? '',
     }
-    if (isUUID(s.id)) row.id = s.id
+    if (allRealUUIDs) row.id = s.id
     return row
   })
 
@@ -87,18 +91,18 @@ export async function PUT(req: NextRequest, { params }: Params) {
   )
 
   // 4. Re-insert all hotspots using the real DB step IDs
-  const hotspotRows = steps.flatMap((s: {
-    id: string
-    hotspots: Array<{
-      id: string
-      type: string
-      x: number; y: number; width: number; height: number
-      targetStepId: string | null
-      placeholder?: string
-      label: string
-    }>
-  }, sIdx: number) => {
-    const realStepId = isUUID(s.id) ? s.id : (idByOrder.get(sIdx) ?? null)
+  type HotspotInput = {
+    id: string; type: string
+    x: number; y: number; width: number; height: number
+    targetStepId: string | null; placeholder?: string; label: string
+  }
+  type StepInput = { id: string; hotspots: HotspotInput[] }
+
+  const allHotspots: HotspotInput[] = steps.flatMap((s: StepInput) => s.hotspots ?? [])
+  const allHotspotUUIDs = allHotspots.every((h) => isUUID(h.id))
+
+  const hotspotRows = steps.flatMap((s: StepInput, sIdx: number) => {
+    const realStepId = allRealUUIDs ? s.id : (idByOrder.get(sIdx) ?? null)
     if (!realStepId) return []
     return (s.hotspots ?? []).map((h) => {
       const row: Record<string, unknown> = {
@@ -112,7 +116,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         placeholder: h.placeholder ?? null,
         label: h.label ?? '',
       }
-      if (isUUID(h.id)) row.id = h.id
+      if (allHotspotUUIDs) row.id = h.id
       return row
     })
   })
