@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import type { HotspotType } from "@/lib/editor-types"
 import { cn } from "@/lib/utils"
-import { Compass, CompassOff } from "lucide-react"
+import { Compass } from "lucide-react"
 
 type Hotspot = {
   id: string
@@ -161,7 +161,7 @@ export function DemoViewer({ title, steps, defaultGuided = false }: Props) {
         )}
         title={guided ? "Disable guided mode" : "Enable guided mode"}
       >
-        {guided ? <Compass className="size-3" /> : <CompassOff className="size-3" />}
+        <Compass className="size-3" />
         {guided ? "Guided mode on" : "Guided mode off"}
       </button>
 
