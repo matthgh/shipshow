@@ -1,12 +1,14 @@
 "use client"
 
 import { Eye, Pencil, Upload, ChevronLeft, ImagePlus, Loader2 } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
 type Props = {
   projectName: string
+  onRenameProject: (name: string) => void
   mode: "edit" | "preview"
   onModeChange: (mode: "edit" | "preview") => void
   onPublish: () => void
@@ -16,7 +18,28 @@ type Props = {
   hasImage?: boolean
 }
 
-export function EditorToolbar({ projectName, mode, onModeChange, onPublish, isSaving, onUploadClick, isUploading, hasImage }: Props) {
+export function EditorToolbar({ projectName, onRenameProject, mode, onModeChange, onPublish, isSaving, onUploadClick, isUploading, hasImage }: Props) {
+  const [editingName, setEditingName] = useState(false)
+  const [draft, setDraft] = useState(projectName)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Keep draft in sync when projectName changes externally (e.g. on load)
+  useEffect(() => { if (!editingName) setDraft(projectName) }, [projectName, editingName])
+
+  useEffect(() => {
+    if (editingName) {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }
+  }, [editingName])
+
+  const commitRename = () => {
+    const trimmed = draft.trim() || projectName
+    setDraft(trimmed)
+    onRenameProject(trimmed)
+    setEditingName(false)
+  }
+
   return (
     <header className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-border bg-card z-10">
       {/* Left: back + project name */}
@@ -32,7 +55,28 @@ export function EditorToolbar({ projectName, mode, onModeChange, onPublish, isSa
           <div className="size-5 rounded bg-primary/15 flex items-center justify-center">
             <div className="size-2.5 rounded-sm bg-primary" />
           </div>
-          <span className="text-sm font-medium truncate max-w-48">{projectName}</span>
+          {editingName ? (
+            <input
+              ref={inputRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commitRename}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing || e.keyCode === 229) return
+                if (e.key === "Enter") commitRename()
+                if (e.key === "Escape") { setDraft(projectName); setEditingName(false) }
+              }}
+              className="text-sm font-medium bg-muted border border-primary rounded px-2 py-0.5 outline-none focus:ring-1 focus:ring-primary max-w-48 w-48"
+            />
+          ) : (
+            <button
+              onClick={() => setEditingName(true)}
+              title="Click to rename"
+              className="text-sm font-medium truncate max-w-48 hover:text-primary transition-colors text-left"
+            >
+              {projectName}
+            </button>
+          )}
         </div>
       </div>
 

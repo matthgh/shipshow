@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { data } = await supabase.from("demos").select("title").eq("share_slug", slug).single()
   return {
     title: data?.title ? `${data.title} — ShipShow` : "Demo — ShipShow",
-    description: "Demo interattiva creata con ShipShow.",
+    description: "Interactive demo created with ShipShow.",
   }
 }
 

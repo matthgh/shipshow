@@ -278,12 +278,40 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
       const id = await ensureDemoExists()
       if (!id) return
 
-      // Generate a slug if not set
-      const slug = `demo-${id.slice(0, 8)}`
-      const res = await fetch(`/api/demos/${id}`, {
+      // Cancel any pending debounced save and flush the current state to DB now
+      if (saveTimeout.current) clearTimeout(saveTimeout.current)
+      const saveRes = await fetch(`/api/demos/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, status: "published", share_slug: slug, steps }),
+        body: JSON.stringify({ title, status: "draft", share_slug: null, steps }),
+      })
+      const saveData = await saveRes.json()
+      if (saveData.error) throw new Error(saveData.error)
+
+      // Sync any newly assigned step IDs
+      if (saveData.stepIdMap) {
+        const map = new Map<string, string>(saveData.stepIdMap.map((e: { clientId: string; dbId: string }) => [e.clientId, e.dbId]))
+        setSteps((prev) => prev.map((s) => {
+          const newId = map.get(s.id)
+          if (!newId || newId === s.id) return s
+          return {
+            ...s,
+            id: newId,
+            hotspots: s.hotspots.map((h) => ({
+              ...h,
+              targetStepId: h.targetStepId ? (map.get(h.targetStepId) ?? h.targetStepId) : null,
+            })),
+          }
+        }))
+        setActiveStepId((prev) => map.get(prev) ?? prev)
+      }
+
+      // Now publish: only update status + slug, steps are already saved
+      const slug = `demo-${id.slice(0, 8)}`
+      const res = await fetch(`/api/demos/${id}/publish`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ share_slug: slug }),
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
@@ -321,6 +349,10 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
       />
       <EditorToolbar
         projectName={title}
+        onRenameProject={(name) => {
+          setTitle(name)
+          ensureDemoExists().then((id) => { if (id) scheduleSave(steps, name, id) })
+        }}
         mode={mode}
         onModeChange={setMode}
         onPublish={handlePublish}
