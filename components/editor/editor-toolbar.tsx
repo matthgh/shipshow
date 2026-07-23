@@ -1,6 +1,6 @@
 "use client"
 
-import { Eye, Pencil, Upload, ChevronLeft } from "lucide-react"
+import { Eye, Pencil, Upload, ChevronLeft, ImagePlus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -11,9 +11,12 @@ type Props = {
   onModeChange: (mode: "edit" | "preview") => void
   onPublish: () => void
   isSaving?: boolean
+  onUploadClick?: () => void
+  isUploading?: boolean
+  hasImage?: boolean
 }
 
-export function EditorToolbar({ projectName, mode, onModeChange, onPublish, isSaving }: Props) {
+export function EditorToolbar({ projectName, mode, onModeChange, onPublish, isSaving, onUploadClick, isUploading, hasImage }: Props) {
   return (
     <header className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-border bg-card z-10">
       {/* Left: back + project name */}
@@ -62,6 +65,22 @@ export function EditorToolbar({ projectName, mode, onModeChange, onPublish, isSa
             Anteprima
           </button>
         </div>
+
+        {mode === "edit" && onUploadClick && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onUploadClick}
+            disabled={isUploading}
+            className="gap-1.5 text-xs h-7 px-3"
+          >
+            {isUploading
+              ? <Loader2 className="size-3 animate-spin" data-icon="inline-start" />
+              : <ImagePlus className="size-3" data-icon="inline-start" />
+            }
+            {isUploading ? "Caricamento..." : hasImage ? "Cambia immagine" : "Carica immagine"}
+          </Button>
+        )}
 
         <Button size="sm" onClick={onPublish} disabled={isSaving} className="gap-1.5 text-xs h-7 px-3">
           {isSaving

@@ -68,7 +68,9 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
   const [mode, setMode] = useState<"edit" | "preview">("edit")
   const [loading, setLoading] = useState(!!initialDemoId)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load existing demo on mount
   useEffect(() => {
@@ -208,6 +210,31 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
     setActiveStepId(stepId)
   }, [])
 
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const id = await ensureDemoExists()
+    if (!id) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+      fd.append("stepId", activeStepId)
+      const res = await fetch("/api/upload", { method: "POST", body: fd })
+      const json = await res.json()
+      if (json.url) {
+        setSteps((prev) => {
+          const next = prev.map((s) => s.id === activeStepId ? { ...s, imageUrl: json.url } : s)
+          scheduleSave(next, title, id)
+          return next
+        })
+      }
+    } finally {
+      setUploading(false)
+      e.target.value = ""
+    }
+  }, [activeStepId, ensureDemoExists, scheduleSave, title])
+
   const handleImageUpload = useCallback((stepId: string, url: string) => {
     setSteps((prev) => {
       const next = prev.map((s) => s.id === stepId ? { ...s, imageUrl: url } : s)
@@ -255,12 +282,23 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
+      {/* Hidden file input — triggered by toolbar button */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+        className="hidden"
+        onChange={handleFileChange}
+      />
       <EditorToolbar
         projectName={title}
         mode={mode}
         onModeChange={setMode}
         onPublish={handlePublish}
         isSaving={saving}
+        onUploadClick={() => fileInputRef.current?.click()}
+        isUploading={uploading}
+        hasImage={!!activeStep?.imageUrl}
       />
       <div className="flex flex-1 overflow-hidden">
         <StepsSidebar
