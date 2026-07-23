@@ -4,7 +4,7 @@ import { DemoViewer } from "@/components/demo-viewer"
 import type { Metadata } from "next"
 import type { HotspotType } from "@/lib/editor-types"
 
-type Params = { params: Promise<{ slug: string }> }
+type Params = { params: Promise<{ slug: string }>; searchParams: Promise<{ guided?: string }> }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params
@@ -16,8 +16,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   }
 }
 
-export default async function Page({ params }: Params) {
+export default async function Page({ params, searchParams }: Params) {
   const { slug } = await params
+  const { guided } = await searchParams
   const supabase = await createClient()
 
   const { data: demo } = await supabase
@@ -53,5 +54,5 @@ export default async function Page({ params }: Params) {
     })),
   }))
 
-  return <DemoViewer title={demo.title} steps={viewerSteps} />
+  return <DemoViewer title={demo.title} steps={viewerSteps} defaultGuided={guided === "1"} />
 }

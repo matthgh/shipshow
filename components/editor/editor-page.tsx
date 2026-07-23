@@ -66,6 +66,7 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
   const [steps, setSteps] = useState<Step[]>(BLANK_STEPS)
   const [activeStepId, setActiveStepId] = useState<string>(BLANK_STEPS[0].id)
   const [mode, setMode] = useState<"edit" | "preview">("edit")
+  const [guided, setGuided] = useState(false)
   const [loading, setLoading] = useState(!!initialDemoId)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -355,6 +356,8 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
         }}
         mode={mode}
         onModeChange={setMode}
+        guided={guided}
+        onGuidedChange={setGuided}
         onPublish={handlePublish}
         isSaving={saving}
         onUploadClick={() => fileInputRef.current?.click()}
@@ -374,6 +377,7 @@ export function EditorPage({ demoId: initialDemoId }: Props) {
           step={activeStep}
           steps={steps}
           mode={mode}
+          guided={guided}
           onAddHotspot={handleAddHotspot}
           onUpdateTarget={handleUpdateTarget}
           onUpdateType={handleUpdateType}

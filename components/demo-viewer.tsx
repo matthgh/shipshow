@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import type { HotspotType } from "@/lib/editor-types"
 import { cn } from "@/lib/utils"
+import { Compass, CompassOff } from "lucide-react"
 
 type Hotspot = {
   id: string
@@ -23,13 +24,15 @@ type Step = {
 type Props = {
   title: string
   steps: Step[]
+  defaultGuided?: boolean
 }
 
-export function DemoViewer({ title, steps }: Props) {
+export function DemoViewer({ title, steps, defaultGuided = false }: Props) {
   const [currentStepId, setCurrentStepId] = useState(steps[0]?.id ?? "")
   const [prevStepId, setPrevStepId] = useState<string | null>(null)
   const [transitioning, setTransitioning] = useState(false)
   const [direction, setDirection] = useState<"forward" | "backward">("forward")
+  const [guided, setGuided] = useState(defaultGuided)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const currentStep = steps.find((s) => s.id === currentStepId) ?? steps[0]
@@ -79,34 +82,30 @@ export function DemoViewer({ title, steps }: Props) {
           {/* Screen — clipping container */}
           <div className="relative bg-card overflow-hidden" style={{ paddingBottom: "216.67%" }}>
 
-            {/* Outgoing screen (slides out) */}
+            {/* Outgoing screen */}
             {transitioning && prevStep && (
               <div
                 key={`prev-${prevStep.id}`}
                 className={cn(
                   "absolute inset-0 w-full h-full",
-                  direction === "forward"
-                    ? "animate-slide-out-left"
-                    : "animate-slide-out-right"
+                  direction === "forward" ? "animate-slide-out-left" : "animate-slide-out-right"
                 )}
               >
-                <ScreenContent step={prevStep} onNavigate={() => {}} />
+                <ScreenContent step={prevStep} guided={guided} onNavigate={() => {}} />
               </div>
             )}
 
-            {/* Incoming screen (slides in) */}
+            {/* Incoming screen */}
             <div
               key={`curr-${currentStep.id}`}
               className={cn(
                 "absolute inset-0 w-full h-full",
                 transitioning
-                  ? direction === "forward"
-                    ? "animate-slide-in-right"
-                    : "animate-slide-in-left"
+                  ? direction === "forward" ? "animate-slide-in-right" : "animate-slide-in-left"
                   : ""
               )}
             >
-              <ScreenContent step={currentStep} onNavigate={navigateTo} />
+              <ScreenContent step={currentStep} guided={guided} onNavigate={navigateTo} />
             </div>
 
           </div>
@@ -130,7 +129,7 @@ export function DemoViewer({ title, steps }: Props) {
         </div>
       </div>
 
-      {/* Step label + nav */}
+      {/* Step label + nav + guided toggle */}
       <div className="flex items-center gap-4 mt-4">
         <button
           onClick={() => { if (currentIndex > 0) navigateTo(steps[currentIndex - 1].id) }}
@@ -151,8 +150,23 @@ export function DemoViewer({ title, steps }: Props) {
         </button>
       </div>
 
+      {/* Guided mode toggle */}
+      <button
+        onClick={() => setGuided((g) => !g)}
+        className={cn(
+          "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200",
+          guided
+            ? "border-primary/50 bg-primary/10 text-primary"
+            : "border-border bg-transparent text-muted-foreground hover:text-foreground hover:border-border/80"
+        )}
+        title={guided ? "Disable guided mode" : "Enable guided mode"}
+      >
+        {guided ? <Compass className="size-3" /> : <CompassOff className="size-3" />}
+        {guided ? "Guided mode on" : "Guided mode off"}
+      </button>
+
       {/* Branding footer */}
-      <p className="text-[11px] text-muted-foreground/50 mt-2">
+      <p className="text-[11px] text-muted-foreground/50">
         Built with{" "}
         <a href="/" className="underline underline-offset-2 hover:text-muted-foreground transition-colors">
           ShipShow
@@ -162,8 +176,15 @@ export function DemoViewer({ title, steps }: Props) {
   )
 }
 
-// Extracted screen content to avoid code duplication between current/prev
-function ScreenContent({ step, onNavigate }: { step: Step; onNavigate: (id: string) => void }) {
+function ScreenContent({
+  step,
+  guided,
+  onNavigate,
+}: {
+  step: Step
+  guided: boolean
+  onNavigate: (id: string) => void
+}) {
   return (
     <div className="absolute inset-0 w-full h-full">
       {step.imageUrl && step.imageUrl !== "/placeholder.svg" ? (
@@ -185,26 +206,69 @@ function ScreenContent({ step, onNavigate }: { step: Step; onNavigate: (id: stri
 
       {/* Hotspots */}
       {step.hotspots.map((hs) => (
-        <div
+        <HotspotOverlay
           key={hs.id}
-          className="absolute"
-          style={{ left: `${hs.x}%`, top: `${hs.y}%`, width: `${hs.width}%`, height: `${hs.height}%` }}
-        >
-          {hs.type === "text_input" ? (
-            <input
-              type="text"
-              placeholder={hs.placeholder ?? ""}
-              className="w-full h-full rounded border border-border/60 bg-transparent text-[10px] px-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring"
-            />
-          ) : (
-            <div
-              className="w-full h-full rounded cursor-pointer active:bg-white/20 transition-colors"
-              style={{ WebkitTapHighlightColor: "transparent" }}
-              onClick={() => { if (hs.targetStepId) onNavigate(hs.targetStepId) }}
-            />
-          )}
-        </div>
+          hotspot={hs}
+          guided={guided}
+          onNavigate={onNavigate}
+        />
       ))}
+    </div>
+  )
+}
+
+function HotspotOverlay({
+  hotspot: hs,
+  guided,
+  onNavigate,
+}: {
+  hotspot: Hotspot
+  guided: boolean
+  onNavigate: (id: string) => void
+}) {
+  if (hs.type === "text_input") {
+    return (
+      <div
+        className="absolute"
+        style={{ left: `${hs.x}%`, top: `${hs.y}%`, width: `${hs.width}%`, height: `${hs.height}%` }}
+      >
+        <input
+          type="text"
+          placeholder={hs.placeholder ?? ""}
+          className={cn(
+            "w-full h-full rounded border text-[10px] px-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none transition-all",
+            guided
+              ? "border-primary/70 bg-primary/5 focus:ring-1 focus:ring-primary shadow-[0_0_0_2px_hsl(var(--primary)/0.15)] animate-guided-pulse-input"
+              : "border-border/60 bg-transparent focus:border-ring focus:ring-1 focus:ring-ring"
+          )}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={cn(
+        "absolute rounded cursor-pointer transition-all duration-150 group",
+        guided
+          ? "border-2 border-primary/70 bg-primary/10 shadow-[0_0_0_3px_hsl(var(--primary)/0.2),inset_0_0_0_1px_hsl(var(--primary)/0.3)] animate-guided-pulse"
+          : "active:bg-white/20"
+      )}
+      style={{
+        left: `${hs.x}%`,
+        top: `${hs.y}%`,
+        width: `${hs.width}%`,
+        height: `${hs.height}%`,
+        WebkitTapHighlightColor: "transparent",
+      }}
+      onClick={() => { if (hs.targetStepId) onNavigate(hs.targetStepId) }}
+    >
+      {/* Touch indicator dot visible in guided mode */}
+      {guided && (
+        <span className="absolute -top-1.5 -right-1.5 size-3 rounded-full bg-primary shadow-md flex items-center justify-center">
+          <span className="size-1.5 rounded-full bg-primary-foreground" />
+        </span>
+      )}
     </div>
   )
 }

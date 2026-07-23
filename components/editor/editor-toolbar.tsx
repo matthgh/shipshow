@@ -1,6 +1,6 @@
 "use client"
 
-import { Eye, Pencil, Upload, ChevronLeft, ImagePlus, Loader2 } from "lucide-react"
+import { Eye, Pencil, Upload, ChevronLeft, ImagePlus, Loader2, Compass } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -11,6 +11,8 @@ type Props = {
   onRenameProject: (name: string) => void
   mode: "edit" | "preview"
   onModeChange: (mode: "edit" | "preview") => void
+  guided: boolean
+  onGuidedChange: (v: boolean) => void
   onPublish: () => void
   isSaving?: boolean
   onUploadClick?: () => void
@@ -18,7 +20,7 @@ type Props = {
   hasImage?: boolean
 }
 
-export function EditorToolbar({ projectName, onRenameProject, mode, onModeChange, onPublish, isSaving, onUploadClick, isUploading, hasImage }: Props) {
+export function EditorToolbar({ projectName, onRenameProject, mode, onModeChange, guided, onGuidedChange, onPublish, isSaving, onUploadClick, isUploading, hasImage }: Props) {
   const [editingName, setEditingName] = useState(false)
   const [draft, setDraft] = useState(projectName)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -109,6 +111,22 @@ export function EditorToolbar({ projectName, onRenameProject, mode, onModeChange
             Preview
           </button>
         </div>
+
+        {mode === "preview" && (
+          <button
+            onClick={() => onGuidedChange(!guided)}
+            title={guided ? "Disable guided mode" : "Enable guided mode"}
+            className={cn(
+              "flex items-center gap-1.5 h-7 px-3 rounded-md border text-xs font-medium transition-all",
+              guided
+                ? "border-primary/60 bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:text-foreground hover:border-border/80"
+            )}
+          >
+            <Compass className="size-3" />
+            Guided
+          </button>
+        )}
 
         {mode === "edit" && onUploadClick && (
           <Button

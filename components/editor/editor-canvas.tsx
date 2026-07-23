@@ -13,6 +13,7 @@ type Props = {
   step: Step
   steps: Step[]
   mode: "edit" | "preview"
+  guided?: boolean
   onAddHotspot: (hotspot: Omit<Hotspot, "id" | "label">) => void
   onUpdateTarget: (hotspotId: string, targetStepId: string | null) => void
   onUpdateType: (hotspotId: string, type: HotspotType, placeholder?: string) => void
@@ -31,6 +32,7 @@ export function EditorCanvas({
   step,
   steps,
   mode,
+  guided = false,
   onAddHotspot,
   onUpdateTarget,
   onUpdateType,
@@ -191,7 +193,9 @@ export function EditorCanvas({
                           "w-full h-full rounded bg-transparent text-[11px] px-2 text-foreground placeholder:text-muted-foreground/60 focus:outline-none",
                           mode === "edit"
                             ? "border-2 border-dashed cursor-pointer select-none"
-                            : "border border-border/60 focus:border-ring focus:ring-1 focus:ring-ring cursor-text"
+                            : guided
+                              ? "border border-primary/70 bg-primary/5 animate-guided-pulse-input cursor-text"
+                              : "border border-border/60 focus:border-ring focus:ring-1 focus:ring-ring cursor-text"
                         )}
                         style={
                           mode === "edit"
@@ -232,10 +236,12 @@ export function EditorCanvas({
                     <>
                       <div
                         className={cn(
-                          "w-full h-full rounded transition-all",
+                          "w-full h-full rounded transition-all relative",
                           mode === "edit"
                             ? "border-2 border-dashed cursor-pointer"
-                            : "bg-transparent hover:bg-white/10 cursor-pointer"
+                            : guided
+                              ? "border-2 border-primary/70 bg-primary/10 animate-guided-pulse cursor-pointer"
+                              : "bg-transparent hover:bg-white/10 cursor-pointer"
                         )}
                         style={
                           mode === "edit"
@@ -247,7 +253,14 @@ export function EditorCanvas({
                               }
                             : undefined
                         }
-                      />
+                      >
+                        {/* Indicator dot in guided preview mode */}
+                        {mode === "preview" && guided && (
+                          <span className="absolute -top-1.5 -right-1.5 size-3 rounded-full bg-primary shadow-md flex items-center justify-center pointer-events-none">
+                            <span className="size-1.5 rounded-full bg-primary-foreground" />
+                          </span>
+                        )}
+                      </div>
                       {/* Label in edit mode */}
                       {mode === "edit" && (
                         <span
