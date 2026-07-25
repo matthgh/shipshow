@@ -21,7 +21,6 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     .eq('id', id)
     .eq('user_id', user.id)
 
-  console.log('[v0] PATCH publish demo', id, 'slug:', share_slug, 'user:', user.id, 'err:', error?.message ?? 'ok')
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }

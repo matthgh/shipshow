@@ -30,13 +30,11 @@ export default async function Page({ params, searchParams }: Params) {
 
   if (!demo) notFound()
 
-  const { data: steps, error: stepsErr } = await supabase
+  const { data: steps } = await supabase
     .from("steps")
-    .select("*, hotspots(*)")
+    .select("*, hotspots!hotspots_step_id_fkey(*)")
     .eq("demo_id", demo.id)
     .order("order_index", { ascending: true })
-
-  console.log("[v0] demo page slug:", slug, "demo_id:", demo.id, "steps count:", steps?.length, "stepsErr:", stepsErr?.message)
 
   const viewerSteps = (steps ?? []).map((s) => ({
     id: s.id,

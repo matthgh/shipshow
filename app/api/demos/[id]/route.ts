@@ -32,7 +32,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const { data: steps, error: stepsErr } = await supabase
     .from('steps')
-    .select('*, hotspots(*)')
+    .select('*, hotspots!hotspots_step_id_fkey(*)')
     .eq('demo_id', id)
     .order('order_index', { ascending: true })
 
@@ -78,15 +78,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
 
   // 2. Delete all existing steps (cascade deletes hotspots)
-  const { error: deleteErr } = await supabase.from('steps').delete().eq('demo_id', id)
-  console.log('[v0] PUT delete steps:', deleteErr?.message ?? 'ok')
+  await supabase.from('steps').delete().eq('demo_id', id)
 
   if (!steps?.length) {
-    console.log('[v0] PUT no steps to insert, returning early')
     return NextResponse.json({ ok: true, stepIdMap: [] })
   }
-
-  console.log('[v0] PUT inserting', steps.length, 'steps for demo', id)
 
   const isUUID = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
 
@@ -111,7 +107,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
   let insertedReal: Array<{ id: string; order_index: number }> = []
   if (realRows.length) {
     const { data, error } = await supabase.from('steps').insert(realRows).select('id, order_index')
-    console.log('[v0] PUT real rows insert:', error?.message ?? `ok, got ${data?.length} rows`)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     insertedReal = data ?? []
   }
@@ -119,7 +114,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
   let insertedTemp: Array<{ id: string; order_index: number }> = []
   if (tempRows.length) {
     const { data, error } = await supabase.from('steps').insert(tempRows).select('id, order_index')
-    console.log('[v0] PUT temp rows insert:', error?.message ?? `ok, got ${data?.length} rows`)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     insertedTemp = data ?? []
   }
@@ -176,7 +170,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
     dbId: clientToDb.get(s.id) ?? s.id,
   }))
 
-  console.log('[v0] PUT done. stepIdMap:', JSON.stringify(stepIdMap))
   return NextResponse.json({ ok: true, stepIdMap })
 }
 
