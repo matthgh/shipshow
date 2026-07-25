@@ -33,7 +33,7 @@ export function DemoViewer({ title, steps, defaultGuided = false }: Props) {
   const [transitioning, setTransitioning] = useState(false)
   const [direction, setDirection] = useState<"forward" | "backward">("forward")
   const [guided, setGuided] = useState(defaultGuided)
-  const [imageAspect, setImageAspect] = useState<number>(9 / 16)
+
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const currentStep = steps.find((s) => s.id === currentStepId) ?? steps[0]
@@ -80,33 +80,33 @@ export function DemoViewer({ title, steps, defaultGuided = false }: Props) {
       {/* Phone frame */}
       <div className="relative">
         <div className="relative w-[280px] rounded-[2.5rem] border-[6px] border-foreground/10 bg-foreground/5 shadow-2xl shadow-black/20 overflow-hidden">
-          {/* Screen — aspect ratio adapts to the actual image dimensions */}
-          <div className="relative bg-card overflow-hidden" style={{ aspectRatio: `${imageAspect}` }}>
+          {/* Screen — image drives the height naturally, hotspots are absolute on top */}
+          <div className="relative bg-card overflow-hidden">
 
-            {/* Outgoing screen */}
+            {/* Outgoing screen — absolute so it doesn't affect height */}
             {transitioning && prevStep && (
               <div
                 key={`prev-${prevStep.id}`}
                 className={cn(
-                  "absolute inset-0 w-full h-full",
+                  "absolute inset-0 w-full h-full z-10",
                   direction === "forward" ? "animate-slide-out-left" : "animate-slide-out-right"
                 )}
               >
-                <ScreenContent step={prevStep} guided={guided} onNavigate={() => {}} onAspectRatio={() => {}} />
+                <ScreenContent step={prevStep} guided={guided} onNavigate={() => {}} />
               </div>
             )}
 
-            {/* Incoming screen */}
+            {/* Incoming / current screen — in flow so its image drives the container height */}
             <div
               key={`curr-${currentStep.id}`}
               className={cn(
-                "absolute inset-0 w-full h-full",
+                "relative w-full",
                 transitioning
                   ? direction === "forward" ? "animate-slide-in-right" : "animate-slide-in-left"
                   : ""
               )}
             >
-              <ScreenContent step={currentStep} guided={guided} onNavigate={navigateTo} onAspectRatio={setImageAspect} />
+              <ScreenContent step={currentStep} guided={guided} onNavigate={navigateTo} />
             </div>
 
           </div>
@@ -181,31 +181,23 @@ function ScreenContent({
   step,
   guided,
   onNavigate,
-  onAspectRatio,
 }: {
   step: Step
   guided: boolean
   onNavigate: (id: string) => void
-  onAspectRatio: (ratio: number) => void
 }) {
   return (
-    <div className="absolute inset-0 w-full h-full">
+    <div className="relative w-full">
       {step.imageUrl && step.imageUrl !== "/placeholder.svg" ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={step.imageUrl}
           alt={step.label}
-          className="absolute inset-0 w-full h-full object-fill"
+          className="block w-full h-auto"
           crossOrigin="anonymous"
-          onLoad={(e) => {
-            const img = e.currentTarget
-            if (img.naturalWidth && img.naturalHeight) {
-              onAspectRatio(img.naturalWidth / img.naturalHeight)
-            }
-          }}
         />
       ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/40">
+        <div className="flex flex-col items-center justify-center gap-2 bg-muted/40" style={{ aspectRatio: "9/16" }}>
           <div className="size-10 rounded-xl bg-muted flex items-center justify-center">
             <div className="size-5 rounded-md bg-muted-foreground/20" />
           </div>
@@ -213,7 +205,8 @@ function ScreenContent({
         </div>
       )}
 
-      {/* Hotspots */}
+      {/* Hotspots — absolute over the image */}
+      <div className="absolute inset-0">
       {step.hotspots.map((hs) => (
         <HotspotOverlay
           key={hs.id}
@@ -222,6 +215,7 @@ function ScreenContent({
           onNavigate={onNavigate}
         />
       ))}
+      </div>
     </div>
   )
 }
