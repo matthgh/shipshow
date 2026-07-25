@@ -41,6 +41,7 @@ export function EditorCanvas({
   onImageUpload,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [containerAspect, setContainerAspect] = useState<string | undefined>(undefined)
   const [drawing, setDrawing] = useState<DrawingRect | null>(null)
   const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null)
   const [popoverAnchor, setPopoverAnchor] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
@@ -117,13 +118,14 @@ export function EditorCanvas({
 
         {/* Phone shell */}
         <div className="relative rounded-[2.5rem] border-[6px] border-foreground/10 bg-foreground/5 shadow-2xl shadow-black/20 overflow-hidden">
-          {/* Screen — image drives the height, hotspots are absolute on top */}
+          {/* Screen — aspect ratio set from image natural dimensions so coords match viewer */}
           <div
             ref={containerRef}
             className={cn(
               "relative overflow-hidden bg-background",
               mode === "edit" && "cursor-crosshair"
             )}
+            style={{ aspectRatio: containerAspect ?? "9/16" }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -135,11 +137,15 @@ export function EditorCanvas({
               <img
                 src={step.imageUrl}
                 alt={step.label}
-                className="block w-full h-auto pointer-events-none"
+                className="absolute inset-0 w-full h-full object-fill pointer-events-none"
                 draggable={false}
+                onLoad={(e) => {
+                  const { naturalWidth: w, naturalHeight: h } = e.currentTarget
+                  if (w && h) setContainerAspect(`${w}/${h}`)
+                }}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-secondary to-muted pointer-events-none" style={{ aspectRatio: "9/16" }}>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-secondary to-muted pointer-events-none">
                 <ImagePlus className="size-8 text-muted-foreground/30" />
                 <span className="text-[10px] text-muted-foreground/50 font-medium">No image</span>
               </div>

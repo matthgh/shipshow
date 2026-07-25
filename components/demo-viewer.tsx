@@ -184,18 +184,28 @@ function ScreenContent({
   onNavigate: (id: string) => void
   animClass?: string
 }) {
+  const [aspect, setAspect] = useState<string>("9/16")
+
   return (
-    <div className={cn("relative w-full", animClass)}>
+    // Container uses the same dynamic aspectRatio as EditorCanvas so % coords align exactly
+    <div
+      className={cn("relative overflow-hidden", animClass)}
+      style={{ aspectRatio: aspect }}
+    >
       {step.imageUrl && step.imageUrl !== "/placeholder.svg" ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={step.imageUrl}
           alt={step.label}
-          className="block w-full h-auto"
+          className="absolute inset-0 w-full h-full object-fill"
           crossOrigin="anonymous"
+          onLoad={(e) => {
+            const { naturalWidth: w, naturalHeight: h } = e.currentTarget
+            if (w && h) setAspect(`${w}/${h}`)
+          }}
         />
       ) : (
-        <div className="flex flex-col items-center justify-center gap-2 bg-muted/40" style={{ aspectRatio: "9/16" }}>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/40">
           <div className="size-10 rounded-xl bg-muted flex items-center justify-center">
             <div className="size-5 rounded-md bg-muted-foreground/20" />
           </div>
@@ -203,7 +213,7 @@ function ScreenContent({
         </div>
       )}
 
-      {/* Hotspots — absolute directly inside the same relative container as the image */}
+      {/* Hotspots — absolute over the image, same coordinate space as EditorCanvas */}
       {step.hotspots.map((hs) => (
         <HotspotOverlay
           key={hs.id}
@@ -225,15 +235,6 @@ function HotspotOverlay({
   guided: boolean
   onNavigate: (id: string) => void
 }) {
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!ref.current) return
-    const el = ref.current
-    const parent = el.offsetParent as HTMLElement | null
-    const img = parent?.querySelector("img")
-    console.log(`[v0] hotspot ${hs.id.slice(0,6)} stored=(${hs.x.toFixed(1)}%,${hs.y.toFixed(1)}%) el.offsetTop=${el.offsetTop} el.offsetLeft=${el.offsetLeft} parent.h=${parent?.offsetHeight} img.h=${img?.offsetHeight}`)
-  })
-
   if (hs.type === "text_input") {
     return (
       <div
@@ -256,7 +257,6 @@ function HotspotOverlay({
 
   return (
     <div
-      ref={ref}
       className={cn(
         "absolute rounded cursor-pointer transition-all duration-150 group",
         guided
