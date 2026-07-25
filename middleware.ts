@@ -1,3 +1,4 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
 
@@ -18,7 +19,6 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/maintenance'
       return NextResponse.redirect(url)
     }
-    // Still run session update for allowed routes and return early (no auth check needed)
     return await updateSession(request)
   }
 
