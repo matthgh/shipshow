@@ -96,18 +96,14 @@ export function DemoViewer({ title, steps, defaultGuided = false }: Props) {
               </div>
             )}
 
-            {/* Incoming / current screen — in flow so its image drives the container height */}
-            <div
+            {/* Current screen — no extra wrapper, ScreenContent is direct child */}
+            <ScreenContent
               key={`curr-${currentStep.id}`}
-              className={cn(
-                "relative w-full",
-                transitioning
-                  ? direction === "forward" ? "animate-slide-in-right" : "animate-slide-in-left"
-                  : ""
-              )}
-            >
-              <ScreenContent step={currentStep} guided={guided} onNavigate={navigateTo} />
-            </div>
+              step={currentStep}
+              guided={guided}
+              onNavigate={navigateTo}
+              animClass={transitioning ? (direction === "forward" ? "animate-slide-in-right" : "animate-slide-in-left") : ""}
+            />
 
           </div>
         </div>
@@ -181,13 +177,15 @@ function ScreenContent({
   step,
   guided,
   onNavigate,
+  animClass = "",
 }: {
   step: Step
   guided: boolean
   onNavigate: (id: string) => void
+  animClass?: string
 }) {
   return (
-    <div className="relative w-full">
+    <div className={cn("relative w-full", animClass)}>
       {step.imageUrl && step.imageUrl !== "/placeholder.svg" ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
@@ -227,6 +225,15 @@ function HotspotOverlay({
   guided: boolean
   onNavigate: (id: string) => void
 }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!ref.current) return
+    const el = ref.current
+    const parent = el.offsetParent as HTMLElement | null
+    const img = parent?.querySelector("img")
+    console.log(`[v0] hotspot ${hs.id.slice(0,6)} stored=(${hs.x.toFixed(1)}%,${hs.y.toFixed(1)}%) el.offsetTop=${el.offsetTop} el.offsetLeft=${el.offsetLeft} parent.h=${parent?.offsetHeight} img.h=${img?.offsetHeight}`)
+  })
+
   if (hs.type === "text_input") {
     return (
       <div
@@ -249,6 +256,7 @@ function HotspotOverlay({
 
   return (
     <div
+      ref={ref}
       className={cn(
         "absolute rounded cursor-pointer transition-all duration-150 group",
         guided
