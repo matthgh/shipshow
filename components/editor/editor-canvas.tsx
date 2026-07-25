@@ -117,9 +117,6 @@ export function EditorCanvas({
 
         {/* Phone shell */}
         <div className="relative rounded-[2.5rem] border-[6px] border-foreground/10 bg-foreground/5 shadow-2xl shadow-black/20 overflow-hidden">
-          {/* Notch */}
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-4 rounded-full bg-foreground/10 z-10" />
-
           {/* Screen — image drives the height, hotspots are absolute on top */}
           <div
             ref={containerRef}
