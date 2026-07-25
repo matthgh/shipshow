@@ -205,8 +205,7 @@ function ScreenContent({
         </div>
       )}
 
-      {/* Hotspots — absolute over the image */}
-      <div className="absolute inset-0">
+      {/* Hotspots — absolute directly inside the same relative container as the image */}
       {step.hotspots.map((hs) => (
         <HotspotOverlay
           key={hs.id}
@@ -215,7 +214,6 @@ function ScreenContent({
           onNavigate={onNavigate}
         />
       ))}
-      </div>
     </div>
   )
 }
