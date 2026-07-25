@@ -33,6 +33,7 @@ export function DemoViewer({ title, steps, defaultGuided = false }: Props) {
   const [transitioning, setTransitioning] = useState(false)
   const [direction, setDirection] = useState<"forward" | "backward">("forward")
   const [guided, setGuided] = useState(defaultGuided)
+  const [imageAspect, setImageAspect] = useState<number>(9 / 16)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const currentStep = steps.find((s) => s.id === currentStepId) ?? steps[0]
@@ -79,8 +80,8 @@ export function DemoViewer({ title, steps, defaultGuided = false }: Props) {
       {/* Phone frame */}
       <div className="relative">
         <div className="relative w-[280px] rounded-[2.5rem] border-[6px] border-foreground/10 bg-foreground/5 shadow-2xl shadow-black/20 overflow-hidden">
-          {/* Screen — same aspect-ratio method as EditorCanvas so hotspot % coords align */}
-          <div className="relative bg-card overflow-hidden" style={{ aspectRatio: "9/16" }}>
+          {/* Screen — aspect ratio adapts to the actual image dimensions */}
+          <div className="relative bg-card overflow-hidden" style={{ aspectRatio: `${imageAspect}` }}>
 
             {/* Outgoing screen */}
             {transitioning && prevStep && (
@@ -91,7 +92,7 @@ export function DemoViewer({ title, steps, defaultGuided = false }: Props) {
                   direction === "forward" ? "animate-slide-out-left" : "animate-slide-out-right"
                 )}
               >
-                <ScreenContent step={prevStep} guided={guided} onNavigate={() => {}} />
+                <ScreenContent step={prevStep} guided={guided} onNavigate={() => {}} onAspectRatio={() => {}} />
               </div>
             )}
 
@@ -105,7 +106,7 @@ export function DemoViewer({ title, steps, defaultGuided = false }: Props) {
                   : ""
               )}
             >
-              <ScreenContent step={currentStep} guided={guided} onNavigate={navigateTo} />
+              <ScreenContent step={currentStep} guided={guided} onNavigate={navigateTo} onAspectRatio={setImageAspect} />
             </div>
 
           </div>
@@ -180,10 +181,12 @@ function ScreenContent({
   step,
   guided,
   onNavigate,
+  onAspectRatio,
 }: {
   step: Step
   guided: boolean
   onNavigate: (id: string) => void
+  onAspectRatio: (ratio: number) => void
 }) {
   return (
     <div className="absolute inset-0 w-full h-full">
@@ -192,8 +195,14 @@ function ScreenContent({
         <img
           src={step.imageUrl}
           alt={step.label}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-fill"
           crossOrigin="anonymous"
+          onLoad={(e) => {
+            const img = e.currentTarget
+            if (img.naturalWidth && img.naturalHeight) {
+              onAspectRatio(img.naturalWidth / img.naturalHeight)
+            }
+          }}
         />
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/40">

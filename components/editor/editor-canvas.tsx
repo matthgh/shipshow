@@ -41,6 +41,7 @@ export function EditorCanvas({
   onImageUpload,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [imageAspect, setImageAspect] = useState<number>(9 / 16)
   const [drawing, setDrawing] = useState<DrawingRect | null>(null)
   const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null)
   const [popoverAnchor, setPopoverAnchor] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
@@ -127,7 +128,7 @@ export function EditorCanvas({
               "relative overflow-hidden bg-background",
               mode === "edit" && "cursor-crosshair"
             )}
-            style={{ aspectRatio: "9/16" }}
+            style={{ aspectRatio: `${imageAspect}` }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -139,8 +140,14 @@ export function EditorCanvas({
               <img
                 src={step.imageUrl}
                 alt={step.label}
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                className="absolute inset-0 w-full h-full object-fill pointer-events-none"
                 draggable={false}
+                onLoad={(e) => {
+                  const img = e.currentTarget
+                  if (img.naturalWidth && img.naturalHeight) {
+                    setImageAspect(img.naturalWidth / img.naturalHeight)
+                  }
+                }}
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-secondary to-muted pointer-events-none">
