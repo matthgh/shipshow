@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server"
-import { createServiceClient } from "@/lib/supabase/service"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -7,23 +6,16 @@ import { DashboardClient } from "@/components/dashboard-client"
 import { cn } from "@/lib/utils"
 
 export default async function DashboardPage() {
-  const authClient = await createClient()
-  const { data: { user } } = await authClient.auth.getUser()
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect("/auth/login")
 
-  let demos: Array<{ id: string; title: string; status: string; share_slug: string | null; created_at: string }> = []
-  try {
-    const supabase = createServiceClient()
-    const { data } = await supabase
-      .from("demos")
-      .select("id, title, status, share_slug, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-    demos = data ?? []
-  } catch (e) {
-    console.error("[v0] Dashboard demos fetch failed:", e)
-  }
+  const { data: demos } = await supabase
+    .from("demos")
+    .select("id, title, status, share_slug, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
 
   return (
     <div className="min-h-screen bg-background">
@@ -49,14 +41,14 @@ export default async function DashboardPage() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-8">
           <div>
-          <h1 className="text-2xl font-bold text-foreground">Your demos</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {demos?.length ?? 0} {demos?.length === 1 ? "demo" : "demos"}
-          </p>
+            <h1 className="text-2xl font-bold text-foreground">Your demos</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {demos?.length ?? 0} {demos?.length === 1 ? "demo" : "demos"}
+            </p>
           </div>
         </div>
 
-        <DashboardClient demos={demos} />
+        <DashboardClient demos={demos ?? []} />
       </main>
     </div>
   )
