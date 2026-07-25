@@ -78,9 +78,9 @@ export function DemoViewer({ title, steps, defaultGuided = false }: Props) {
 
       {/* Phone frame */}
       <div className="relative">
-        <div className="relative w-[280px] rounded-[2.8rem] border-[7px] border-foreground/15 bg-foreground/5 shadow-2xl shadow-black/20 overflow-hidden">
-          {/* Screen — clipping container */}
-          <div className="relative bg-card overflow-hidden" style={{ paddingBottom: "216.67%" }}>
+        <div className="relative w-[280px] rounded-[2.5rem] border-[6px] border-foreground/10 bg-foreground/5 shadow-2xl shadow-black/20 overflow-hidden">
+          {/* Screen — same aspect-ratio method as EditorCanvas so hotspot % coords align */}
+          <div className="relative bg-card overflow-hidden" style={{ aspectRatio: "9/16" }}>
 
             {/* Outgoing screen */}
             {transitioning && prevStep && (
