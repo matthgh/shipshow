@@ -12,12 +12,18 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/auth/login")
 
-  const supabase = createServiceClient()
-  const { data: demos } = await supabase
-    .from("demos")
-    .select("id, title, status, share_slug, created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
+  let demos: Array<{ id: string; title: string; status: string; share_slug: string | null; created_at: string }> = []
+  try {
+    const supabase = createServiceClient()
+    const { data } = await supabase
+      .from("demos")
+      .select("id, title, status, share_slug, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+    demos = data ?? []
+  } catch (e) {
+    console.error("[v0] Dashboard demos fetch failed:", e)
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -50,7 +56,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <DashboardClient demos={demos ?? []} />
+        <DashboardClient demos={demos} />
       </main>
     </div>
   )

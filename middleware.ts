@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
-import { createServerClient } from '@supabase/ssr'
 
 const PROTECTED = ['/editor', '/dashboard']
 
