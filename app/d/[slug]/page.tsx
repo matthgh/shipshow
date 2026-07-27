@@ -30,6 +30,9 @@ export default async function Page({ params, searchParams }: Params) {
 
   if (!demo) notFound()
 
+  // Increment view count — fire and forget, never block the render
+  supabase.rpc('increment_demo_views', { demo_id: demo.id }).then()
+
   const { data: steps } = await supabase
     .from("steps")
     .select("*, hotspots!hotspots_step_id_fkey(*)")
