@@ -1,5 +1,4 @@
 import { VideoOff, GitCommitHorizontal, X } from "lucide-react"
-import { cn } from "@/lib/utils"
 
 const comparisons = [
   {
@@ -24,18 +23,7 @@ const comparisons = [
 
 export function VsSection() {
   return (
-    <section className="relative border-t border-border bg-[oklch(0.08_0_0)] py-28 overflow-hidden">
-
-      {/* Faint grid texture */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            "linear-gradient(oklch(1 0 0 / 3%) 1px, transparent 1px), linear-gradient(90deg, oklch(1 0 0 / 3%) 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
+    <section className="relative border-t border-border bg-card/30 py-28 overflow-hidden">
 
       <div className="relative mx-auto max-w-6xl px-6">
 
