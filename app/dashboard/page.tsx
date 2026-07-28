@@ -13,8 +13,9 @@ export default async function DashboardPage() {
 
   const { data: demos } = await supabase
     .from("demos")
-    .select("id, title, status, share_slug, created_at")
+    .select("id, title, status, share_slug, created_at, is_example")
     .eq("user_id", user.id)
+    .order("is_example", { ascending: false })   // example demo floats to top
     .order("created_at", { ascending: false })
 
   return (

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Pencil, Trash2, ExternalLink, Clock } from "lucide-react"
+import { Pencil, Trash2, ExternalLink, Clock, Sparkles } from "lucide-react"
 
 type Demo = {
   id: string
@@ -13,6 +13,7 @@ type Demo = {
   status: string
   share_slug: string | null
   created_at: string
+  is_example: boolean
 }
 
 export function DashboardClient({ demos: initial }: { demos: Demo[] }) {
@@ -50,16 +51,28 @@ export function DashboardClient({ demos: initial }: { demos: Demo[] }) {
       {demos.map((demo) => (
         <div
           key={demo.id}
-          className="bg-card border border-border rounded-xl px-5 py-4 flex items-center gap-4 hover:border-primary/30 transition-colors"
+          className={cn(
+            "bg-card border rounded-xl px-5 py-4 flex items-center gap-4 transition-colors",
+            demo.is_example
+              ? "border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50"
+              : "border-border hover:border-primary/30"
+          )}
         >
-          {/* Status badge */}
-          <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-            demo.status === "published"
-              ? "bg-primary/10 text-primary border-primary/20"
-              : "bg-muted text-muted-foreground border-border"
-          }`}>
-            {demo.status === "published" ? "Published" : "Draft"}
-          </span>
+          {/* Example badge or status badge */}
+          {demo.is_example ? (
+            <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-600 border-amber-500/30 dark:text-amber-400">
+              <Sparkles className="size-2.5" />
+              Example
+            </span>
+          ) : (
+            <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+              demo.status === "published"
+                ? "bg-primary/10 text-primary border-primary/20"
+                : "bg-muted text-muted-foreground border-border"
+            }`}>
+              {demo.status === "published" ? "Published" : "Draft"}
+            </span>
+          )}
 
           {/* Title */}
           <span className="flex-1 font-medium text-foreground truncate">{demo.title}</span>
