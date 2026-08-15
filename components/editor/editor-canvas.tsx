@@ -2,8 +2,9 @@
 
 import { useRef, useState, useCallback, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { ImagePlus } from "lucide-react"
+import { ImagePlus, ChevronsDown } from "lucide-react"
 import type { Hotspot, HotspotType, Step } from "@/lib/editor-types"
+import { PHONE_FRAME_HEIGHT, PHONE_FRAME_WIDTH } from "@/lib/editor-types"
 import { HotspotPopover } from "./hotspot-popover"
 import { cn } from "@/lib/utils"
 
@@ -40,22 +41,39 @@ export function EditorCanvas({
   onNavigate,
   onImageUpload,
 }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [containerAspect, setContainerAspect] = useState<string | undefined>(undefined)
+  // outerRef = fixed-height, overflow-y-auto viewport (the visible "screen")
+  // contentRef = the full, unclipped image + hotspots — its rect always
+  // reflects the TOTAL image height regardless of scroll position, so pct()
+  // math and drawing coordinates stay correct while scrolled.
+  const outerRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const [drawing, setDrawing] = useState<DrawingRect | null>(null)
   const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null)
   const [popoverAnchor, setPopoverAnchor] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [isScrollable, setIsScrollable] = useState(false)
   const isDrawing = useRef(false)
 
   useEffect(() => { setMounted(true) }, [])
 
+  const checkScrollable = useCallback(() => {
+    const outer = outerRef.current
+    if (!outer) return
+    setIsScrollable(outer.scrollHeight > outer.clientHeight + 1)
+  }, [])
+
+  useEffect(() => { checkScrollable() }, [checkScrollable, step.imageUrl])
+
   // --- Drawing handlers (edit mode only) ---
+  // Coordinates are measured against contentRef (the full image), never the
+  // clipped outer viewport — its getBoundingClientRect().top moves negative
+  // as the user scrolls, so clientY - rect.top always lands on the correct
+  // point of the FULL image, no manual scrollTop math required.
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (mode !== "edit") return
       if ((e.target as HTMLElement).closest("[data-hotspot]")) return
-      const rect = containerRef.current!.getBoundingClientRect()
+      const rect = contentRef.current!.getBoundingClientRect()
       const x = e.clientX - rect.left
       const y = e.clientY - rect.top
       isDrawing.current = true
@@ -67,16 +85,16 @@ export function EditorCanvas({
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDrawing.current || !drawing) return
-    const rect = containerRef.current!.getBoundingClientRect()
+    const rect = contentRef.current!.getBoundingClientRect()
     setDrawing((d) =>
       d ? { ...d, endX: e.clientX - rect.left, endY: e.clientY - rect.top } : null
     )
   }, [drawing])
 
   const handleMouseUp = useCallback(() => {
-    if (!isDrawing.current || !drawing || !containerRef.current) return
+    if (!isDrawing.current || !drawing || !contentRef.current) return
     isDrawing.current = false
-    const rect = containerRef.current.getBoundingClientRect()
+    const rect = contentRef.current.getBoundingClientRect()
     const w = rect.width
     const h = rect.height
     const x = Math.min(drawing.startX, drawing.endX)
@@ -110,49 +128,56 @@ export function EditorCanvas({
     <>
     <main className="flex-1 flex items-center justify-center bg-muted/40 overflow-hidden p-8 select-none">
       {/* Phone frame */}
-      <div className="relative flex flex-col" style={{ width: 280 }}>
+      <div className="relative flex flex-col" style={{ width: PHONE_FRAME_WIDTH }}>
         {/* Step label */}
         <div className="mb-3 text-center">
           <span className="text-xs font-medium text-muted-foreground">{step.label}</span>
         </div>
 
-        {/* Phone shell */}
-        <div className="relative rounded-[2.5rem] border-[6px] border-foreground/10 bg-foreground/5 shadow-2xl shadow-black/20 overflow-hidden">
-          {/* Screen — aspect ratio set from image natural dimensions so coords match viewer */}
+        {/* Phone shell — fixed height, clips rounded corners. The screen inside
+            scrolls independently when the screenshot is taller than the frame. */}
+        <div
+          className="relative rounded-[2.5rem] border-[6px] border-foreground/10 bg-foreground/5 shadow-2xl shadow-black/20 overflow-hidden"
+          style={{ height: PHONE_FRAME_HEIGHT + 12 }}
+        >
+          {/* Visible screen viewport — fixed height, scrolls vertically */}
           <div
-            ref={containerRef}
+            ref={outerRef}
             className={cn(
-              "relative overflow-hidden bg-background",
+              "relative h-full overflow-y-auto overscroll-contain bg-background scrollbar-thin",
               mode === "edit" && "cursor-crosshair"
             )}
-            style={{ aspectRatio: containerAspect ?? "9/16" }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={() => { if (isDrawing.current) handleMouseUp() }}
+            onScroll={checkScrollable}
           >
-            {/* Screenshot or placeholder */}
-            {step.imageUrl ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={step.imageUrl}
-                alt={step.label}
-                className="absolute inset-0 w-full h-full object-fill pointer-events-none"
-                draggable={false}
-                onLoad={(e) => {
-                  const { naturalWidth: w, naturalHeight: h } = e.currentTarget
-                  if (w && h) setContainerAspect(`${w}/${h}`)
-                }}
-              />
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-secondary to-muted pointer-events-none">
-                <ImagePlus className="size-8 text-muted-foreground/30" />
-                <span className="text-[10px] text-muted-foreground/50 font-medium">No image</span>
-              </div>
-            )}
+            {/* Full, unclipped content — its real height may exceed the frame */}
+            <div ref={contentRef} className="relative w-full">
+              {/* Screenshot or placeholder */}
+              {step.imageUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={step.imageUrl}
+                  alt={step.label}
+                  className="block w-full h-auto pointer-events-none"
+                  draggable={false}
+                  onLoad={checkScrollable}
+                />
+              ) : (
+                <div
+                  className="w-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-secondary to-muted pointer-events-none"
+                  style={{ aspectRatio: "9/16" }}
+                >
+                  <ImagePlus className="size-8 text-muted-foreground/30" />
+                  <span className="text-[10px] text-muted-foreground/50 font-medium">No image</span>
+                </div>
+              )}
 
-            {/* Existing hotspots */}
-            {step.hotspots.map((hs) => {
+              {/* Existing hotspots — positioned as % of the FULL image height above,
+                  so they scroll along with the content and stay anchored correctly */}
+              {step.hotspots.map((hs) => {
               const isSelected = selectedHotspot?.id === hs.id
               const isTextInput = hs.type === "text_input"
               const TEXT_COLOR = "oklch(0.55 0.18 145)" // green for text_input
@@ -278,20 +303,28 @@ export function EditorCanvas({
               )
             })}
 
-            {/* Active drawing rect */}
-            {drawingStyle && (
-              <div
-                className="absolute pointer-events-none rounded border-2 border-dashed"
-                style={{
-                  ...drawingStyle,
-                  borderColor: HOTSPOT_COLOR,
-                  backgroundColor: "oklch(0.52 0.22 255 / 15%)",
-                }}
-              />
-            )}
+              {/* Active drawing rect */}
+              {drawingStyle && (
+                <div
+                  className="absolute pointer-events-none rounded border-2 border-dashed"
+                  style={{
+                    ...drawingStyle,
+                    borderColor: HOTSPOT_COLOR,
+                    backgroundColor: "oklch(0.52 0.22 255 / 15%)",
+                  }}
+                />
+              )}
+            </div>
 
             {/* Popover is rendered via portal — see below */}
           </div>
+
+          {/* Scroll affordance — fades the bottom edge and hints there's more below */}
+          {isScrollable && (
+            <div className="absolute inset-x-0 bottom-0 h-10 flex items-end justify-center pb-1.5 pointer-events-none bg-gradient-to-t from-background/90 to-transparent">
+              <ChevronsDown className="size-3.5 text-muted-foreground/70 animate-bounce" />
+            </div>
+          )}
         </div>
 
         {/* Mode hint */}
@@ -299,6 +332,7 @@ export function EditorCanvas({
           {mode === "edit"
             ? "Drag to create a hotspot · Click a hotspot to configure it"
             : "Click hotspots to navigate between steps"}
+          {isScrollable && " · Scroll inside the frame to see more"}
         </p>
       </div>
     </main>

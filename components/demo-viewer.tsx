@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import type { HotspotType } from "@/lib/editor-types"
+import { PHONE_FRAME_HEIGHT, PHONE_FRAME_WIDTH } from "@/lib/editor-types"
 import { cn } from "@/lib/utils"
-import { Compass } from "lucide-react"
+import { Compass, ChevronsDown } from "lucide-react"
 
 type Hotspot = {
   id: string
@@ -79,9 +80,12 @@ export function DemoViewer({ title, steps, defaultGuided = false }: Props) {
 
       {/* Phone frame */}
       <div className="relative">
-        <div className="relative w-[280px] rounded-[2.5rem] border-[6px] border-foreground/10 bg-foreground/5 shadow-2xl shadow-black/20 overflow-hidden">
-          {/* Screen — image drives the height naturally, hotspots are absolute on top */}
-          <div className="relative bg-card overflow-hidden">
+        <div
+          className="relative rounded-[2.5rem] border-[6px] border-foreground/10 bg-foreground/5 shadow-2xl shadow-black/20 overflow-hidden"
+          style={{ width: PHONE_FRAME_WIDTH + 12, height: PHONE_FRAME_HEIGHT + 12 }}
+        >
+          {/* Screen — fixed height; each ScreenContent below owns its own vertical scroll */}
+          <div className="relative h-full bg-card overflow-hidden">
 
             {/* Outgoing screen — absolute so it doesn't affect height */}
             {transitioning && prevStep && (
@@ -184,44 +188,64 @@ function ScreenContent({
   onNavigate: (id: string) => void
   animClass?: string
 }) {
-  const [aspect, setAspect] = useState<string>("9/16")
+  const outerRef = useRef<HTMLDivElement>(null)
+  const [isScrollable, setIsScrollable] = useState(false)
+
+  const checkScrollable = useCallback(() => {
+    const outer = outerRef.current
+    if (!outer) return
+    setIsScrollable(outer.scrollHeight > outer.clientHeight + 1)
+  }, [])
+
+  useEffect(() => { checkScrollable() }, [checkScrollable, step.imageUrl])
 
   return (
-    // Container uses the same dynamic aspectRatio as EditorCanvas so % coords align exactly
-    <div
-      className={cn("relative overflow-hidden", animClass)}
-      style={{ aspectRatio: aspect }}
-    >
-      {step.imageUrl && step.imageUrl !== "/placeholder.svg" ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={step.imageUrl}
-          alt={step.label}
-          className="absolute inset-0 w-full h-full object-fill"
-          crossOrigin="anonymous"
-          onLoad={(e) => {
-            const { naturalWidth: w, naturalHeight: h } = e.currentTarget
-            if (w && h) setAspect(`${w}/${h}`)
-          }}
-        />
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/40">
-          <div className="size-10 rounded-xl bg-muted flex items-center justify-center">
-            <div className="size-5 rounded-md bg-muted-foreground/20" />
-          </div>
-          <p className="text-[10px] text-muted-foreground">{step.label}</p>
+    <div className={cn("relative h-full", animClass)}>
+      {/* Fixed-height viewport — scrolls when the screenshot is taller than the frame.
+          Hotspot % coords are computed against the full image below, so they stay
+          correctly anchored to the content while the user scrolls, at any offset. */}
+      <div
+        ref={outerRef}
+        className="relative h-full overflow-y-auto overscroll-contain scrollbar-thin"
+        onScroll={checkScrollable}
+      >
+        <div className="relative w-full">
+          {step.imageUrl && step.imageUrl !== "/placeholder.svg" ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={step.imageUrl}
+              alt={step.label}
+              className="block w-full h-auto"
+              crossOrigin="anonymous"
+              onLoad={checkScrollable}
+            />
+          ) : (
+            <div className="w-full flex flex-col items-center justify-center gap-2 bg-muted/40" style={{ aspectRatio: "9/16" }}>
+              <div className="size-10 rounded-xl bg-muted flex items-center justify-center">
+                <div className="size-5 rounded-md bg-muted-foreground/20" />
+              </div>
+              <p className="text-[10px] text-muted-foreground">{step.label}</p>
+            </div>
+          )}
+
+          {/* Hotspots — absolute over the full image, same coordinate space as EditorCanvas */}
+          {step.hotspots.map((hs) => (
+            <HotspotOverlay
+              key={hs.id}
+              hotspot={hs}
+              guided={guided}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Scroll affordance for end users — this screen has more content below */}
+      {isScrollable && (
+        <div className="absolute inset-x-0 bottom-0 h-10 flex items-end justify-center pb-1.5 pointer-events-none bg-gradient-to-t from-card/90 to-transparent">
+          <ChevronsDown className="size-3.5 text-muted-foreground/70 animate-bounce" />
         </div>
       )}
-
-      {/* Hotspots — absolute over the image, same coordinate space as EditorCanvas */}
-      {step.hotspots.map((hs) => (
-        <HotspotOverlay
-          key={hs.id}
-          hotspot={hs}
-          guided={guided}
-          onNavigate={onNavigate}
-        />
-      ))}
     </div>
   )
 }

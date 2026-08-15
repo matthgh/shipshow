@@ -1,10 +1,11 @@
 "use client"
 
-import { Eye, Pencil, Upload, ChevronLeft, ImagePlus, Loader2, Compass } from "lucide-react"
+import { Eye, Pencil, Upload, ChevronLeft, ImagePlus, Loader2, Compass, HelpCircle } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { ScrollableScreenshotHelp } from "./scrollable-screenshot-help"
 
 type Props = {
   projectName: string
@@ -129,19 +130,31 @@ export function EditorToolbar({ projectName, onRenameProject, mode, onModeChange
         )}
 
         {mode === "edit" && onUploadClick && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onUploadClick}
-            disabled={isUploading}
-            className="gap-1.5 text-xs h-7 px-3"
-          >
-            {isUploading
-              ? <Loader2 className="size-3 animate-spin" data-icon="inline-start" />
-              : <ImagePlus className="size-3" data-icon="inline-start" />
-            }
-            {isUploading ? "Uploading..." : hasImage ? "Change image" : "Upload image"}
-          </Button>
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onUploadClick}
+              disabled={isUploading}
+              className="gap-1.5 text-xs h-7 px-3"
+            >
+              {isUploading
+                ? <Loader2 className="size-3 animate-spin" data-icon="inline-start" />
+                : <ImagePlus className="size-3" data-icon="inline-start" />
+              }
+              {isUploading ? "Uploading..." : hasImage ? "Change image" : "Upload image"}
+            </Button>
+            <ScrollableScreenshotHelp>
+              <button
+                type="button"
+                title="Got a scrollable screen?"
+                aria-label="Help: capturing scrollable screens"
+                className="flex items-center justify-center size-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <HelpCircle className="size-3.5" />
+              </button>
+            </ScrollableScreenshotHelp>
+          </>
         )}
 
         <Button size="sm" onClick={onPublish} disabled={isSaving} className="gap-1.5 text-xs h-7 px-3">

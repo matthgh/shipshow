@@ -1,3 +1,11 @@
+// Fixed visible height (px) of the phone screen area in both the editor and
+// the public viewer. When an uploaded screenshot is taller than this, the
+// screen scrolls internally instead of being squeezed to fit — hotspot x/y/
+// width/height percentages are always computed against the FULL image
+// height, not just the visible slice, so they track correctly during scroll.
+export const PHONE_FRAME_WIDTH = 280
+export const PHONE_FRAME_HEIGHT = 560
+
 export type HotspotType = 'navigate' | 'text_input'
 
 export type Hotspot = {
