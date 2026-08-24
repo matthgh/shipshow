@@ -1,8 +1,6 @@
 import { Navbar } from "@/components/navbar"
 import { HeroSection } from "@/components/hero-section"
-import { VsSection } from "@/components/vs-section"
 import { ProblemSection } from "@/components/problem-section"
-import { SolutionSection } from "@/components/solution-section"
 import { HowItWorksSection } from "@/components/how-it-works-section"
 import { BeforeAfterSection } from "@/components/before-after-section"
 import { FeaturesSection } from "@/components/features-section"
@@ -12,18 +10,20 @@ import { Footer } from "@/components/footer"
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    // `landing` scopes the marketing palette (see globals.css); Inter is the
+    // landing typeface while the rest of the app stays on Geist.
+    <div className="landing font-[family-name:var(--font-inter)] bg-background text-foreground antialiased">
       <Navbar />
-      <HeroSection />
-      <VsSection />
-      <ProblemSection />
-      <SolutionSection />
-      <HowItWorksSection />
-      <BeforeAfterSection />
-      <FeaturesSection />
-      <TargetUsersSection />
-      <CtaSection />
+      <main>
+        <HeroSection />
+        <ProblemSection />
+        <HowItWorksSection />
+        <BeforeAfterSection />
+        <FeaturesSection />
+        <TargetUsersSection />
+        <CtaSection />
+      </main>
       <Footer />
-    </main>
+    </div>
   )
 }

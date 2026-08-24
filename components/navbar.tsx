@@ -1,12 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { buttonVariants } from "@/components/ui/button"
-import { Menu, X, Zap } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
+
+const NAV_LINKS = [
+  { label: "How it works", href: "#how" },
+  { label: "Features", href: "#features" },
+  { label: "Who it\u2019s for", href: "#who" },
+]
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
@@ -21,94 +25,66 @@ export function Navbar() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Signed-in visitors go straight into the product instead of the signup flow.
+  const ctaHref = user ? "/dashboard" : "/auth/sign-up"
+  const ctaLabel = user ? "Dashboard \u2192" : "Start free \u2192"
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="size-7 rounded-md bg-primary flex items-center justify-center">
-            <Zap className="size-4 text-primary-foreground" fill="currentColor" />
-          </div>
-          <span className="font-semibold text-foreground tracking-tight">ShipShow</span>
+    <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+          <span className="size-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground text-sm">
+            S
+          </span>
+          ShipShow
         </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-6">
-          {["Features", "How it works", "Pricing", "Docs"].map((item) => (
-            <a
-              key={item}
-              href="#"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {item}
+        <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
+          {NAV_LINKS.map((link) => (
+            <a key={link.href} href={link.href} className="hover:text-foreground transition-colors">
+              {link.label}
             </a>
           ))}
-        </nav>
-
-        {/* Desktop CTA */}
-        <div className="hidden md:flex items-center gap-3">
-          {user ? (
-            <>
-              <Link href="/dashboard" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-muted-foreground hover:text-foreground")}>
-                Dashboard
-              </Link>
-              <Link href="/editor" className={cn(buttonVariants({ size: "sm" }), "bg-primary text-primary-foreground hover:bg-primary/90")}>
-                + New demo
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link href="/auth/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-muted-foreground hover:text-foreground")}>
-                Sign in
-              </Link>
-              <Link href="/auth/sign-up" className={cn(buttonVariants({ size: "sm" }), "bg-primary text-primary-foreground hover:bg-primary/90")}>
-                Get started
-              </Link>
-            </>
-          )}
         </div>
 
-        {/* Mobile menu button */}
+        <Link
+          href={ctaHref}
+          className="hidden md:inline-block bg-primary hover:bg-accent text-primary-foreground text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+        >
+          {ctaLabel}
+        </Link>
+
         <button
+          type="button"
           className="md:hidden text-muted-foreground"
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
+          aria-expanded={open}
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
       </div>
 
-      {/* Mobile menu */}
       {open && (
         <div className="md:hidden border-t border-border bg-background px-6 py-4 flex flex-col gap-4">
-          {["Features", "How it works", "Pricing", "Docs"].map((item) => (
-            <a key={item} href="#" className="text-sm text-muted-foreground hover:text-foreground">
-              {item}
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              onClick={() => setOpen(false)}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              {link.label}
             </a>
           ))}
-          <div className="flex flex-col gap-2 pt-2 border-t border-border">
-            {user ? (
-              <>
-                <Link href="/dashboard" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "justify-start")}>
-                  Dashboard
-                </Link>
-                <Link href="/editor" className={cn(buttonVariants({ size: "sm" }))}>
-                  + New demo
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/auth/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "justify-start text-muted-foreground")}>
-                  Sign in
-                </Link>
-                <Link href="/auth/sign-up" className={cn(buttonVariants({ size: "sm" }), "bg-primary text-primary-foreground")}>
-                  Get started
-                </Link>
-              </>
-            )}
-          </div>
+          <Link
+            href={ctaHref}
+            className="bg-primary hover:bg-accent text-primary-foreground text-sm font-medium px-5 py-2.5 rounded-lg text-center transition-colors"
+          >
+            {ctaLabel}
+          </Link>
         </div>
       )}
-    </header>
+    </nav>
   )
 }

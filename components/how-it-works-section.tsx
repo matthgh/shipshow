@@ -1,65 +1,49 @@
-import { Upload, Layers, Share2 } from "lucide-react"
-
-const steps = [
+const STEPS = [
   {
-    icon: Upload,
-    number: "1",
-    title: "Upload your app screens",
-    description:
-      "Drag and drop your screenshots or export directly from Figma, Sketch, or your simulator. Any image format works.",
-    hint: "Supports PNG, JPG, WebP",
+    number: "01",
+    title: "Upload your screens",
+    body: "Drag & drop screenshots from your simulator, Figma exports, or any PNG/JPG/WebP.",
   },
   {
-    icon: Layers,
-    number: "2",
-    title: "Define the navigation flow",
-    description:
-      "Draw clickable hotspots on each screen and connect them to the next. Build multi-step flows in just a few clicks.",
-    hint: "No coding required",
+    number: "02",
+    title: "Connect the flows",
+    body: "Draw hotspots and link screens together. Build the exact user journey in a few clicks.",
   },
   {
-    icon: Share2,
-    number: "3",
-    title: "Generate a shareable demo link",
-    description:
-      "Hit publish and get a unique URL. Share it anywhere — Slack, email, Notion, or embed it in your client portal.",
-    hint: "shipshow.app/demo/your-app",
+    number: "03",
+    title: "Share one link",
+    body: "Hit publish → get a unique URL. Send it anywhere. No login required for viewers.",
   },
 ]
 
 export function HowItWorksSection() {
   return (
-    <section className="py-24 border-t border-border bg-card/30">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="text-center mb-14">
-          <p className="text-sm text-primary font-medium mb-3 tracking-wider uppercase">How it works</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground text-balance">
-            From screens to shareable demo in minutes.
+    <section id="how" className="py-20 px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-balance">
+            From screens to shareable demo in minutes
           </h2>
+          <p className="text-muted-foreground text-lg text-pretty">
+            Three simple steps. No design tools required.
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {steps.map(({ icon: Icon, number, title, description, hint }) => (
-            <div
-              key={number}
-              className="relative rounded-2xl border border-border bg-card p-8 flex flex-col gap-5 group hover:border-primary/30 transition-colors"
-            >
-              {/* Step number */}
-              <div className="absolute top-6 right-6 text-4xl font-black text-foreground/5 group-hover:text-foreground/8 transition-colors select-none">
-                {number}
+        {/* pt-6 leaves room for the numeral that overhangs each card's top edge */}
+        <div className="grid md:grid-cols-3 gap-8 pt-6">
+          {STEPS.map((step) => (
+            <div key={step.number} className="relative">
+              {/* Oversized step numeral peeking out above the card. Sits on top
+                  so it reads against the card, matching the reference design. */}
+              <div
+                className="text-6xl font-black text-secondary absolute -top-4 -left-2 select-none z-10"
+                aria-hidden
+              >
+                {step.number}
               </div>
-
-              <div className="size-12 rounded-xl border border-primary/25 bg-primary/10 flex items-center justify-center">
-                <Icon className="size-6 text-primary" />
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
-              </div>
-
-              <div className="mt-auto pt-4 border-t border-border">
-                <span className="text-xs text-primary/70 font-mono">{hint}</span>
+              <div className="relative bg-card border border-border rounded-2xl p-8 h-full">
+                <h3 className="font-semibold text-xl mb-3">{step.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">{step.body}</p>
               </div>
             </div>
           ))}

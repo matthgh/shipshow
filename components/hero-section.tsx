@@ -1,88 +1,113 @@
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Play } from "lucide-react"
-import { PhoneMockup } from "./phone-mockup"
+import Link from "next/link"
+
+// A real published demo, so "Try live demo" lands on an actual interactive demo.
+const LIVE_DEMO_HREF = "/d/demo-339daa95"
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center pt-14 overflow-hidden">
-      {/* Subtle grid background */}
+    <section className="pt-32 pb-20 px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-sm font-medium px-4 py-1.5 rounded-full mb-6">
+            <span
+              className="size-2 rounded-full animate-pulse"
+              style={{ backgroundColor: "var(--success)" }}
+            />
+            Now in beta · Free to try
+          </div>
+
+          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight leading-tight mb-6 text-balance">
+            Stop explaining updates.
+            <br />
+            <span className="gradient-text">Let clients try them.</span>
+          </h1>
+
+          <p className="text-xl text-muted-foreground mb-10 leading-relaxed text-pretty">
+            ShipShow turns your app screens into interactive demos.{" "}
+            <br className="hidden md:block" />
+            One link. No APKs. No videos. No installs. Clients click through the real experience.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/auth/sign-up"
+              className="bg-primary hover:bg-accent text-primary-foreground font-semibold px-8 py-4 rounded-xl text-lg transition-colors shadow-lg shadow-primary/25"
+            >
+              Create your first demo — free
+            </Link>
+            <Link
+              href={LIVE_DEMO_HREF}
+              className="bg-secondary hover:bg-border text-secondary-foreground font-medium px-8 py-4 rounded-xl text-lg transition-colors border border-border"
+            >
+              Try live demo →
+            </Link>
+          </div>
+
+          <p className="mt-6 text-sm text-subtle">
+            Joined by 2,000+ developers · No credit card required
+          </p>
+        </div>
+
+        <ProductPreview />
+      </div>
+    </section>
+  )
+}
+
+/** Browser-chrome mock framing a sample app screen. */
+function ProductPreview() {
+  return (
+    <div className="relative max-w-4xl mx-auto">
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        aria-hidden
+        className="absolute -inset-4 rounded-3xl blur-2xl"
         style={{
-          backgroundImage:
-            "linear-gradient(oklch(0 0 0) 1px, transparent 1px), linear-gradient(90deg, oklch(0 0 0) 1px, transparent 1px)",
-          backgroundSize: "64px 64px",
+          background:
+            "linear-gradient(to right, color-mix(in oklab, var(--primary) 20%, transparent), color-mix(in oklab, #9333ea 20%, transparent))",
         }}
       />
+      <div className="relative bg-card border border-border rounded-2xl overflow-hidden shadow-2xl">
+        {/* Fake browser bar */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-card/80">
+          <div className="flex gap-1.5">
+            <div className="size-3 rounded-full" style={{ backgroundColor: "#ef4444cc" }} />
+            <div className="size-3 rounded-full" style={{ backgroundColor: "#eab308cc" }} />
+            <div className="size-3 rounded-full" style={{ backgroundColor: "#22c55ecc" }} />
+          </div>
+          <div className="flex-1 text-center text-sm text-subtle font-mono">
+            shipshow.app/demo/fitness-app-v1.3
+          </div>
+        </div>
 
-      {/* Radial glow behind content */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-primary/8 blur-[120px] pointer-events-none" />
-
-      <div className="relative mx-auto max-w-6xl px-6 w-full py-24">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Left: Copy */}
-          <div className="flex flex-col gap-6">
-            <Badge
-              variant="secondary"
-              className="w-fit rounded-full border border-primary/30 bg-primary/10 text-primary px-3 py-1 text-xs font-medium"
-            >
-              <span className="size-1.5 rounded-full bg-primary inline-block mr-2 animate-pulse" />
-              Now in beta — free to try
-            </Badge>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground text-balance leading-[1.1]">
-              Show every update of your app with a simple{" "}
-              <span className="text-primary">link.</span>
-            </h1>
-
-            <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
-              ShipShow turns your app changes into interactive, shareable demos.
-              No APKs. No videos. Just a link.
-            </p>
-
-            <div className="flex flex-wrap gap-3">
-              <Button
-                size="lg"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium rounded-lg"
-              >
-                Start free
-                <ArrowRight className="size-4" data-icon="inline-end" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-border text-foreground hover:bg-secondary rounded-lg"
-              >
-                <Play className="size-4" data-icon="inline-start" />
-                View demo
-              </Button>
-            </div>
-
-            {/* Social proof */}
-            <div className="flex items-center gap-3 pt-2">
-              <div className="flex -space-x-2">
-                {["A", "J", "M", "K", "T"].map((initial, i) => (
-                  <div
-                    key={i}
-                    className="size-7 rounded-full border-2 border-background bg-secondary flex items-center justify-center text-[9px] font-semibold text-muted-foreground"
-                  >
-                    {initial}
+        {/* Sample app screen */}
+        <div className="p-8 md:p-12 bg-gradient-to-b from-card to-background text-center">
+          <div className="inline-block bg-secondary rounded-2xl p-6 shadow-xl border border-border max-w-sm">
+            <div className="text-left flex flex-col gap-4">
+              <div className="text-sm text-muted-foreground">Good morning, Alex</div>
+              <div className="text-3xl font-bold">6,140</div>
+              <div className="text-sm text-muted-foreground">Daily steps · 75% of goal</div>
+              <div className="h-2 bg-border rounded-full overflow-hidden">
+                <div className="h-full w-3/4 bg-accent rounded-full" />
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-center text-sm pt-2">
+                {[
+                  { value: "482", label: "Kcal" },
+                  { value: "68", label: "BPM" },
+                  { value: "38m", label: "Active" },
+                ].map((stat) => (
+                  <div key={stat.label}>
+                    <div className="font-semibold">{stat.value}</div>
+                    <div className="text-subtle text-xs">{stat.label}</div>
                   </div>
                 ))}
               </div>
-              <p className="text-sm text-muted-foreground">
-                <span className="text-foreground font-medium">2,000+</span> developers already using it
-              </p>
             </div>
           </div>
-
-          {/* Right: Phone mockup */}
-          <div className="flex justify-center lg:justify-end">
-            <PhoneMockup />
-          </div>
+          <p className="mt-6 text-sm text-subtle">
+            ↑ Interactive demo — clients can actually tap through your flows
+          </p>
         </div>
       </div>
-    </section>
+    </div>
   )
 }

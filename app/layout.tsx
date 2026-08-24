@@ -1,6 +1,6 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist, Geist_Mono, Inter } from 'next/font/google'
 import Script from 'next/script'
 import { Toaster } from 'sonner'
 import './globals.css'
@@ -15,11 +15,13 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
 })
+// Inter is the landing page's typeface; the app UI stays on Geist.
+const inter = Inter({ variable: '--font-inter', subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'ShipShow — Show every update of your app with a simple link',
+  title: 'ShipShow — Show every app update with a simple interactive link',
   description:
-    'ShipShow turns your app changes into interactive, shareable demos. No APKs. No videos. Just a link.',
+    'Turn app screenshots into clickable demos in minutes. Share one link. Clients try the update themselves. No APKs, no videos, no installs.',
   generator: 'v0.app',
 
 }
@@ -37,7 +39,7 @@ export default function RootLayout({
   const isMaintenance = process.env.MAINTENANCE === 'true'
 
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} bg-background`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} bg-background`}>
       <head>
         {/* Warm up the analytics origin so s.js resolves faster */}
         <link rel="preconnect" href="https://t.whop.tw" crossOrigin="anonymous" />
