@@ -9,7 +9,7 @@ const AUDIENCES = [
   },
   {
     title: "Startup teams",
-    body: "Show investors & stakeholders the latest build without TestFlight or device provisioning.",
+    body: "Show investors and stakeholders the latest build without TestFlight or device provisioning.",
   },
   {
     title: "Indie builders",
@@ -19,19 +19,20 @@ const AUDIENCES = [
 
 export function TargetUsersSection() {
   return (
-    <section id="who" className="py-20 px-6 bg-card/50">
+    <section id="who" className="py-24 px-6 bg-card/50">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-balance">
-            Built for every mobile builder
-          </h2>
-        </div>
+        <h2 className="text-3xl md:text-4xl font-bold mb-14 max-w-2xl text-balance">
+          Built for every mobile builder
+        </h2>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Quiet editorial entries marked by a rule, not enclosed in boxes. */}
+        <div className="grid sm:grid-cols-2 gap-y-10 gap-x-16 max-w-4xl">
           {AUDIENCES.map((audience) => (
-            <div key={audience.title} className="bg-card border border-border rounded-2xl p-6">
+            <div key={audience.title} className="border-l-2 border-primary/40 pl-5">
               <h3 className="font-semibold mb-2">{audience.title}</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">{audience.body}</p>
+              <p className="text-muted-foreground text-sm leading-relaxed text-pretty">
+                {audience.body}
+              </p>
             </div>
           ))}
         </div>
